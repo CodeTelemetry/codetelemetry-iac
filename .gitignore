@@ -1,0 +1,13 @@
+# Local credentials and infrastructure state must never enter public history.
+.env
+.env.*
+!.env.example
+*.tfvars
+*.tfvars.json
+*.tfstate
+*.tfstate.*
+*.tfplan
+.terraform/
+.pulumi/
+Pulumi.*.yaml
+crash.log
