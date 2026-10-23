@@ -42,7 +42,9 @@ Do not treat these unavailable controls as configured.
 
 ## Authenticated verification
 
-The next job downloads the artifact from that same run and verifies its signature,
+Downstream jobs use the producing job's immutable artifact ID, including on
+failed-job reruns; they do not infer an artifact name from the consumer attempt.
+The live job downloads the artifact from that same run and verifies its signature,
 source SHA and checksums again before using it. It uses the `release-verification`
 environment, restricted to the `main` branch. Live jobs are serialized and running
 main workflows are not automatically canceled by new pushes.
@@ -73,7 +75,9 @@ candidate is not considered fully verified for release while that job is failing
 The runner refuses nonempty alarms or non-default enrichment before writing. It
 installs the built artifacts in temporary consumers, tests Terraform create,
 update, read/no-drift, import, and destroy, then Pulumi create, update, refresh,
-no-drift and destroy. Test rules are disabled. Cleanup runs on ordinary errors,
+no-drift and destroy. Test rules are disabled. Terraform import checks save a private recovery checkpoint before removing a
+state binding and restore it if import fails, so destroy still owns each resource.
+Cleanup runs on ordinary errors,
 and a failed cleanup fails the job; inspect and reset the dedicated workspace
 before retrying. A runner crash, manual cancellation, or hard timeout may prevent
 cleanup, so verify this workspace before rerunning. The singleton API prevents

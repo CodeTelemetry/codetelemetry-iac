@@ -101,6 +101,8 @@ jobs:
         run: npm audit --audit-level=low
 
   build-candidate:
+    outputs:
+      artifact_id: ${{ steps.upload.outputs.artifact-id }}
     name: Build candidate
     needs: [validation, publication-security]
     if: github.repository == 'CodeTelemetry/terraform-provider-codetelemetry' && github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
@@ -147,7 +149,8 @@ jobs:
           npm exec -- tsc --project sdks/codetelemetry/tsconfig.json
       - name: Build platform archives and checksum manifest
         run: python3 scripts/build-artifacts.py
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - id: upload
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: unsigned-candidate-${{ github.sha }}-${{ github.run_attempt }}
           path: dist/
@@ -155,6 +158,8 @@ jobs:
           retention-days: 2
 
   signed-candidate:
+    outputs:
+      artifact_id: ${{ steps.upload.outputs.artifact-id }}
     name: Signed candidate
     needs: build-candidate
     if: github.repository == 'CodeTelemetry/terraform-provider-codetelemetry' && github.ref == 'refs/heads/main'
@@ -174,7 +179,7 @@ jobs:
           node-version: '24'
       - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
         with:
-          name: unsigned-candidate-${{ github.sha }}-${{ github.run_attempt }}
+          artifact-ids: ${{ needs.build-candidate.outputs.artifact_id }}
           path: dist/
       - uses: sigstore/cosign-installer@b9c35392b7c1401bcc77d30c9b07cf4b1c7a7b07
         with:
@@ -186,7 +191,8 @@ jobs:
         run: cosign sign-blob --yes --bundle dist/SHA256SUMS.sigstore.json dist/SHA256SUMS
       - name: Verify signing identity, revision, and checksums
         run: node scripts/verify-artifacts.mjs dist "$GITHUB_SHA" "$RELEASE_VERSION"
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - id: upload
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: signed-candidate-${{ github.sha }}-${{ github.run_attempt }}
           path: dist/
@@ -226,7 +232,7 @@ jobs:
           echo "$tool_dir/pulumi" >> "$GITHUB_PATH"
       - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
         with:
-          name: signed-candidate-${{ github.sha }}-${{ github.run_attempt }}
+          artifact-ids: ${{ needs.signed-candidate.outputs.artifact_id }}
           path: dist/
       - uses: sigstore/cosign-installer@b9c35392b7c1401bcc77d30c9b07cf4b1c7a7b07
         with:
@@ -283,7 +289,7 @@ jobs:
           echo "$tool_dir/pulumi" >> "$GITHUB_PATH"
       - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
         with:
-          name: signed-candidate-${{ github.sha }}-${{ github.run_attempt }}
+          artifact-ids: ${{ needs.signed-candidate.outputs.artifact_id }}
           path: dist/
       - uses: sigstore/cosign-installer@b9c35392b7c1401bcc77d30c9b07cf4b1c7a7b07
         with:

@@ -2,6 +2,7 @@ import { readFileSync, writeFileSync, rmSync } from 'node:fs';
 import { resolve, join } from 'node:path';
 import { smokeConfiguration, assertEmptyBaseline } from './smoke-guards.mjs';
 import { consumer, command } from './consumer.mjs';
+import { importWithRecovery } from './import-with-recovery.mjs';
 
 async function main() {
   // Refuse all network/CLI work until the isolated principal has been checked.
@@ -34,10 +35,8 @@ async function main() {
     terraform('plan', '-detailed-exitcode', '-input=false');
     rules[0].tql.threshold = 201; writeFileSync(join(project.tf, 'rules.json'), JSON.stringify(rules));
     terraform('apply', '-auto-approve', '-input=false');
-    terraform('state', 'rm', 'codetelemetry_alarm_rules.main');
-    terraform('import', '-input=false', 'codetelemetry_alarm_rules.main', 'workspace');
-    terraform('state', 'rm', 'codetelemetry_enrichment_config.main');
-    terraform('import', '-input=false', 'codetelemetry_enrichment_config.main', 'workspace');
+    importWithRecovery(terraform, 'codetelemetry_alarm_rules.main', join(project.tf, 'import-recovery.tfstate'));
+    importWithRecovery(terraform, 'codetelemetry_enrichment_config.main', join(project.tf, 'import-recovery.tfstate'));
     terraform('plan', '-detailed-exitcode', '-input=false');
     terraform('destroy', '-auto-approve', '-input=false'); tfAttempted = false;
     await empty();

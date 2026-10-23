@@ -51,3 +51,23 @@ test('failed consumer commands never echo captured sensitive output', () => {
   assert.ok(!result.stdout.includes('sensitive-marker') && !result.stderr.includes('sensitive-marker'));
   assert.match(result.stderr, /output withheld/);
 });
+
+test('failed import restores cleanup ownership for both singleton resources', async () => {
+  const { importWithRecovery } = await import('../import-with-recovery.mjs');
+  const root = mkdtempSync(join(tmpdir(), 'ct-import-test-'));
+  try {
+    for (const address of ['codetelemetry_alarm_rules.main', 'codetelemetry_enrichment_config.main']) {
+      const baseline = { [address]: { id: 'workspace', revision: 7 } };
+      let state = structuredClone(baseline);
+      const terraform = (...args) => {
+        if (args[0] === 'state' && args[1] === 'pull') return JSON.stringify(state);
+        if (args[0] === 'state' && args[1] === 'rm') { delete state[args[2]]; return ''; }
+        if (args[0] === 'import') throw Error('simulated import-time HTTP failure');
+        if (args[0] === 'state' && args[1] === 'push') { state = JSON.parse(readFileSync(args[3], 'utf8')); return ''; }
+        throw Error('Unexpected Terraform operation');
+      };
+      assert.throws(() => importWithRecovery(terraform, address, join(root, 'recovery.tfstate')), /simulated import-time HTTP failure/);
+      assert.deepEqual(state, baseline, 'destroy must retain the remote singleton binding');
+    }
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});
