@@ -2,7 +2,7 @@ terraform {
   required_version = ">= 1.5"
   required_providers {
     codetelemetry = {
-      source = "ElliotGardiner/codetelemetry"
+      source = "CodeTelemetry/codetelemetry"
     }
   }
 }

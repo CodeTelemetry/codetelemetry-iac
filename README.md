@@ -22,11 +22,17 @@ The GitHub Actions workflow runs both suites on pull requests, pushes to `main`,
 
 Use exactly one Terraform state or Pulumi stack per workspace. Destroy clears alarms and restores enrichment defaults; consult the package documentation before adoption or deployment.
 
-The planned public home is a fresh repository in the CodeTelemetry organization; see the [public release plan](docs/PUBLIC_RELEASE_PLAN.md). The repository remains private for now. The fresh repository will start from the squashed snapshot so existing private pull-request history is not carried into the public repository.
+This is the fresh CodeTelemetry organization repository. It remains private during
+release setup and contains no imported private pull-request history.
 
-This repository contains unpublished integrations. Registry distribution, signing, and release automation are future work. The Code Telemetry service is separate; see the self-contained [API contract](docs/API_CONTRACT.md).
+Updates to `main` build signed candidates after the full validation and security
+checks. A separate main-only environment job verifies the downloaded artifacts and exercises
+both authenticated lifecycles in a dedicated test workspace. See [release setup
+and verification](docs/RELEASING.md) for required credentials, verification commands,
+and the distinction between a candidate and a public Registry/npm release.
 
-See [SECURITY.md](SECURITY.md), [contributing](CONTRIBUTING.md), and the [publication review](docs/PUBLICATION_REVIEW.md) before distributing this code.
+See [SECURITY.md](SECURITY.md), [contributing](CONTRIBUTING.md), and the
+[publication review](docs/PUBLICATION_REVIEW.md) before distributing this code.
 
 ## License
 

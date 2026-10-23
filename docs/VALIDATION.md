@@ -77,3 +77,5 @@ but the HTTP servers are test fixtures. They do not currently start the live
 CodeTelemetry application, track changes in its private repository, or prove
 registry installation. Application compatibility and consumer distribution need
 separate validation. See the [public release plan](PUBLIC_RELEASE_PLAN.md).
+
+Release artifact integrity and authenticated checks are described in [release setup](RELEASING.md). Ordinary PR validation uses local fixtures and requires no live credentials.

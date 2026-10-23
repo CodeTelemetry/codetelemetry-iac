@@ -11,3 +11,9 @@
 .pulumi/
 Pulumi.*.yaml
 crash.log
+
+# Release candidates and build scratch
+/dist/
+
+__pycache__/
+*.pyc

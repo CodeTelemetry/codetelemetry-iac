@@ -13,7 +13,7 @@
     "node": ">=22"
   },
   "dependencies": {
-    "@pulumi/codetelemetry": "file:sdks/codetelemetry",
+    "@codetelemetry/pulumi-codetelemetry": "file:sdks/codetelemetry",
     "@pulumi/pulumi": "3.268.0"
   },
   "devDependencies": {

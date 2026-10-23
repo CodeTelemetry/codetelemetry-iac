@@ -1,7 +1,7 @@
 # Code Telemetry with Pulumi
 
 Manage Code Telemetry workspace alarms and enrichment settings from TypeScript.
-This project generates a local `@pulumi/codetelemetry` SDK using Pulumi's
+This project generates a local `@codetelemetry/pulumi-codetelemetry` SDK using Pulumi's
 [Terraform provider bridge](https://www.pulumi.com/registry/packages/terraform-provider/installation-configuration/)
 and the sibling [Terraform provider](../terraform-provider-codetelemetry/README.md).
 Both tools run the same API client, validation, and CRUD implementation, including
@@ -76,7 +76,7 @@ The generated SDK can also be used directly:
 
 ```typescript
 import * as pulumi from "@pulumi/pulumi";
-import * as codetelemetry from "@pulumi/codetelemetry";
+import * as codetelemetry from "@codetelemetry/pulumi-codetelemetry";
 
 const provider = new codetelemetry.Provider("workspace", {
   endpoint: "https://your-code-telemetry-host",

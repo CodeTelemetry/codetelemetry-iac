@@ -37,7 +37,7 @@ the `bin` directory you just built:
 ```hcl
 provider_installation {
   dev_overrides {
-    "ElliotGardiner/codetelemetry" = "/absolute/path/to/terraform-provider-codetelemetry/bin"
+    "CodeTelemetry/codetelemetry" = "/absolute/path/to/terraform-provider-codetelemetry/bin"
   }
   direct {}
 }
