@@ -1,18 +1,19 @@
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, writeFileSync, copyFileSync, chmodSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, copyFileSync, chmodSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { randomBytes } from 'node:crypto';
 
 export function command(tool, args, cwd, env = process.env) {
-  try { return execFileSync(tool, args, { cwd, env, encoding: 'utf8', timeout: 120_000, maxBuffer: 4 * 1024 * 1024 }); }
+  try { return execFileSync(tool, args, { cwd, env, encoding: 'utf8', stdio: 'pipe', timeout: 120_000, maxBuffer: 4 * 1024 * 1024 }); }
   catch { throw Error(`${tool} ${args[0]} failed; tool output withheld to protect credentials and state`); }
 }
 export function consumer(directory, version) {
   if (process.platform !== 'linux' || process.arch !== 'x64') throw Error('Consumer checks require the Linux amd64 CI runner');
   if (!/^0\.0\.0-dev\.[1-9][0-9]*$/.test(version)) throw Error('Invalid candidate version');
   const root = mkdtempSync(join(tmpdir(), 'ct-consumer-')); chmodSync(root, 0o700);
+  try {
   const tf = join(root, 'terraform'), pulumi = join(root, 'pulumi'), mirror = join(root, 'mirror');
   for (const path of [tf, pulumi, mirror, join(pulumi, 'bin'), join(root, 'backend')]) mkdirSync(path, { recursive: true });
   const archive = `terraform-provider-codetelemetry_${version}_linux_amd64.zip`;
@@ -37,4 +38,8 @@ export function consumer(directory, version) {
   command(process.env.PULUMI_BINARY || 'pulumi', ['plugin', 'install', 'resource', 'terraform-provider', '1.5.0'], pulumi, env);
   command('node', ['-e', 'const sdk=require("@codetelemetry/pulumi-codetelemetry"); if(!sdk.AlarmRules||!sdk.EnrichmentConfig) process.exit(1)'], pulumi, env);
   return { root, tf, pulumi, env };
+  } catch (error) {
+    rmSync(root, { recursive: true, force: true });
+    throw error;
+  }
 }

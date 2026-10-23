@@ -8,7 +8,7 @@ publication are separate launch steps.
 ## Main builds
 
 After Terraform/Pulumi matrix validation and publication security pass on the
-exact `main` commit, the `Signed candidate` job:
+exact `main` commit, the candidate pipeline:
 
 - Builds Linux, macOS, and Windows archives for amd64 and arm64, with the project
   license and Go dependency notices.
@@ -100,7 +100,9 @@ https://github.com/CodeTelemetry/terraform-provider-codetelemetry/.github/workfl
 ```
 
 and issuer `https://token.actions.githubusercontent.com`. Do not disable certificate,
-transparency-log, or checksum checks. Signing establishes origin and integrity;
+transparency-log, or checksum checks. Only the dedicated signing job has OIDC signing permission. Packaging and
+consumer execution have read-only permissions and no live credential access.
+Signing establishes origin and integrity;
 it does not replace the security or authenticated service checks.
 
 ## Promote a public release

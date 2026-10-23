@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { mkdtempSync, writeFileSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -40,4 +41,13 @@ test('live smoke refuses missing credentials, wrong tenant, expiring credentials
   assertEmptyBaseline({ rules: [], rev: 0 }, defaults);
   assert.throws(() => assertEmptyBaseline({ rules: [{}], rev: 1 }, defaults));
   assert.throws(() => assertEmptyBaseline({ rules: [], rev: 0 }, { ...defaults, budgetPct: 0.5 }));
+});
+
+test('failed consumer commands never echo captured sensitive output', () => {
+  const module = new URL('../consumer.mjs', import.meta.url).href;
+  const code = `import {command} from ${JSON.stringify(module)}; command(process.execPath, ['-e', 'console.error("sensitive-marker"); process.exit(1)'], process.cwd());`;
+  const result = spawnSync(process.execPath, ['--input-type=module', '-e', code], { encoding: 'utf8' });
+  assert.notEqual(result.status, 0);
+  assert.ok(!result.stdout.includes('sensitive-marker') && !result.stderr.includes('sensitive-marker'));
+  assert.match(result.stderr, /output withheld/);
 });

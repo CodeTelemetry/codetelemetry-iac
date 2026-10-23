@@ -62,11 +62,16 @@ with tempfile.TemporaryDirectory(prefix='ct-release-') as temp:
             output.writestr(info, binary.read_bytes())
             output.writestr('LICENSE', (ROOT / 'LICENSE').read_bytes())
             output.writestr('THIRD_PARTY_NOTICES.txt', notices_text)
+# Compile in the locked parent dependency graph, not an independent SDK install.
+subprocess.run(['npm', 'exec', '--', 'tsc', '--project', 'sdks/codetelemetry/tsconfig.json'],
+               cwd=ROOT / 'pulumi-codetelemetry', check=True, timeout=120)
 # SDK is a local-bridge candidate, not a registry-backed standalone npm release.
 sdk = ROOT / 'pulumi-codetelemetry/sdks/codetelemetry'
 metadata = json.loads((sdk / 'package.json').read_text())
 metadata['version'] = VERSION
 (sdk / 'package.json').write_text(json.dumps(metadata, indent=2) + '\n')
+# Generated utilities resolve version metadata relative to the compiled output.
+(sdk / 'bin/package.json').write_text(json.dumps(metadata, indent=2) + '\n')
 subprocess.run(['npm', 'pack', '--ignore-scripts', '--pack-destination', str(DIST)], cwd=sdk, check=True, timeout=120)
 (DIST / 'BUILD.json').write_text(json.dumps({
     'repository': 'CodeTelemetry/terraform-provider-codetelemetry', 'revision': REVISION,
