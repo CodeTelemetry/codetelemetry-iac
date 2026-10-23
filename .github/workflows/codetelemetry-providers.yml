@@ -257,6 +257,15 @@ jobs:
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: '24'
+      - name: Check dedicated workspace configuration before installing tools
+        env:
+          SMOKE_ENDPOINT: ${{ vars.SMOKE_ENDPOINT }}
+          SMOKE_EXPECTED_SUB: ${{ vars.SMOKE_EXPECTED_SUB }}
+          SMOKE_EXPECTED_ISSUER: ${{ vars.SMOKE_EXPECTED_ISSUER }}
+          SMOKE_DEDICATED_WORKSPACE: ${{ vars.SMOKE_DEDICATED_WORKSPACE }}
+          SMOKE_ID_TOKEN: ${{ secrets.SMOKE_ID_TOKEN }}
+        run: |
+          node --input-type=module -e 'import {smokeConfiguration} from "./scripts/smoke-guards.mjs"; smokeConfiguration(process.env);'
       - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3
         with:
           terraform_version: 1.13.5
