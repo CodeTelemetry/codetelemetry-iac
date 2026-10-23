@@ -1,7 +1,7 @@
 # Contributing
 
-The project is currently an unpublished integration. Its planned public home is
-a fresh repository in the CodeTelemetry organization. Contributions are provided
+The project is currently an unpublished integration. Its home is the fresh
+CodeTelemetry organization repository. Contributions are provided
 under the [Mozilla Public License 2.0](LICENSE). Third-party code must retain its
 required license notices.
 

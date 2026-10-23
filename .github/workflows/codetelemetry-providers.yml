@@ -13,7 +13,7 @@ permissions:
 
 concurrency:
   group: providers-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   validation:
@@ -65,7 +65,8 @@ jobs:
           echo "$tool_dir/pulumi" >> "$GITHUB_PATH"
       - name: Lint validation workflow and scripts
         run: |
-          go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.11 .github/workflows/codetelemetry-providers.yml
+          go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.11 .github/workflows/*.yml
+          node --test scripts/test/*.test.mjs
           shellcheck scripts/validate.sh terraform-provider-codetelemetry/scripts/validate.sh
       - name: Validate Terraform provider
         run: bash scripts/validate.sh --terraform
@@ -98,3 +99,212 @@ jobs:
       - name: Audit locked npm dependency graph
         working-directory: pulumi-codetelemetry
         run: npm audit --audit-level=low
+
+  build-candidate:
+    outputs:
+      artifact_id: ${{ steps.upload.outputs.artifact-id }}
+    name: Build candidate
+    needs: [validation, publication-security]
+    if: github.repository == 'CodeTelemetry/terraform-provider-codetelemetry' && github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    permissions:
+      contents: read
+    env:
+      RELEASE_VERSION: 0.0.0-dev.${{ github.run_number }}
+      PROVIDER_VERSION: 0.0.0-dev.${{ github.run_number }}
+      PULUMI_SKIP_UPDATE_CHECK: 'true'
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version: '1.27.3'
+          cache-dependency-path: terraform-provider-codetelemetry/go.sum
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: pulumi-codetelemetry/package-lock.json
+      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3
+        with:
+          terraform_version: 1.13.5
+          terraform_wrapper: false
+      - name: Install pinned Pulumi CLI
+        shell: bash
+        run: |
+          tool_dir="$RUNNER_TEMP/codetelemetry-pulumi"
+          mkdir -p "$tool_dir"
+          curl --fail --silent --show-error --location \
+            https://get.pulumi.com/releases/sdk/pulumi-v3.268.0-linux-x64.tar.gz \
+            --output "$tool_dir/pulumi.tar.gz"
+          echo '903cafeaa9f6327e4bf53a8b7b99ae660f26198acfa804a2f982bf5de3f1de0b  '"$tool_dir/pulumi.tar.gz" | sha256sum --check
+          tar -xzf "$tool_dir/pulumi.tar.gz" -C "$tool_dir"
+          echo "$tool_dir/pulumi" >> "$GITHUB_PATH"
+      - name: Generate and compile SDK
+        working-directory: pulumi-codetelemetry
+        run: |
+          npm run setup
+          npm exec -- tsc --project sdks/codetelemetry/tsconfig.json
+      - name: Build platform archives and checksum manifest
+        run: python3 scripts/build-artifacts.py
+      - id: upload
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: unsigned-candidate-${{ github.sha }}-${{ github.run_attempt }}
+          path: dist/
+          if-no-files-found: error
+          retention-days: 2
+
+  signed-candidate:
+    outputs:
+      artifact_id: ${{ steps.upload.outputs.artifact-id }}
+    name: Signed candidate
+    needs: build-candidate
+    if: github.repository == 'CodeTelemetry/terraform-provider-codetelemetry' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      RELEASE_VERSION: 0.0.0-dev.${{ github.run_number }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24'
+      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
+        with:
+          artifact-ids: ${{ needs.build-candidate.outputs.artifact_id }}
+          path: dist/
+      - uses: sigstore/cosign-installer@b9c35392b7c1401bcc77d30c9b07cf4b1c7a7b07
+        with:
+          cosign-release: 'v3.1.4'
+      - name: Check build manifest before signing
+        run: |
+          node --input-type=module -e 'import {verifyContents} from "./scripts/verify-artifacts.mjs"; verifyContents("dist", process.env.GITHUB_SHA, process.env.RELEASE_VERSION);'
+      - name: Sign manifest with the main workflow identity
+        run: cosign sign-blob --yes --bundle dist/SHA256SUMS.sigstore.json dist/SHA256SUMS
+      - name: Verify signing identity, revision, and checksums
+        run: node scripts/verify-artifacts.mjs dist "$GITHUB_SHA" "$RELEASE_VERSION"
+      - id: upload
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: signed-candidate-${{ github.sha }}-${{ github.run_attempt }}
+          path: dist/
+          if-no-files-found: error
+          retention-days: 14
+
+  consumer-install:
+    name: Artifact consumer install
+    needs: signed-candidate
+    if: github.repository == 'CodeTelemetry/terraform-provider-codetelemetry' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      RELEASE_VERSION: 0.0.0-dev.${{ github.run_number }}
+      PULUMI_SKIP_UPDATE_CHECK: 'true'
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24'
+      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3
+        with:
+          terraform_version: 1.13.5
+          terraform_wrapper: false
+      - name: Install pinned Pulumi CLI
+        shell: bash
+        run: |
+          tool_dir="$RUNNER_TEMP/codetelemetry-pulumi"
+          mkdir -p "$tool_dir"
+          curl --fail --silent --show-error --location \
+            https://get.pulumi.com/releases/sdk/pulumi-v3.268.0-linux-x64.tar.gz \
+            --output "$tool_dir/pulumi.tar.gz"
+          echo '903cafeaa9f6327e4bf53a8b7b99ae660f26198acfa804a2f982bf5de3f1de0b  '"$tool_dir/pulumi.tar.gz" | sha256sum --check
+          tar -xzf "$tool_dir/pulumi.tar.gz" -C "$tool_dir"
+          echo "$tool_dir/pulumi" >> "$GITHUB_PATH"
+      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
+        with:
+          artifact-ids: ${{ needs.signed-candidate.outputs.artifact_id }}
+          path: dist/
+      - uses: sigstore/cosign-installer@b9c35392b7c1401bcc77d30c9b07cf4b1c7a7b07
+        with:
+          cosign-release: 'v3.1.4'
+      - name: Verify and freshly install the candidate
+        run: |
+          node scripts/verify-artifacts.mjs dist "$GITHUB_SHA" "$RELEASE_VERSION"
+          node scripts/check-install.mjs dist "$RELEASE_VERSION"
+
+  authenticated-smoke:
+    name: Authenticated artifact smoke
+    needs: [signed-candidate, consumer-install]
+    if: github.repository == 'CodeTelemetry/terraform-provider-codetelemetry' && github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    # Serialize writes to the singleton test workspace. Never cancel a live cleanup.
+    concurrency:
+      group: dedicated-artifact-smoke
+      cancel-in-progress: false
+    environment: release-verification
+    env:
+      RELEASE_VERSION: 0.0.0-dev.${{ github.run_number }}
+      PULUMI_SKIP_UPDATE_CHECK: 'true'
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24'
+      - name: Check dedicated workspace configuration before installing tools
+        env:
+          SMOKE_ENDPOINT: ${{ vars.SMOKE_ENDPOINT }}
+          SMOKE_EXPECTED_SUB: ${{ vars.SMOKE_EXPECTED_SUB }}
+          SMOKE_EXPECTED_ISSUER: ${{ vars.SMOKE_EXPECTED_ISSUER }}
+          SMOKE_DEDICATED_WORKSPACE: ${{ vars.SMOKE_DEDICATED_WORKSPACE }}
+          SMOKE_ID_TOKEN: ${{ secrets.SMOKE_ID_TOKEN }}
+        run: |
+          node --input-type=module -e 'import {smokeConfiguration} from "./scripts/smoke-guards.mjs"; smokeConfiguration(process.env);'
+      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3
+        with:
+          terraform_version: 1.13.5
+          terraform_wrapper: false
+      - name: Install pinned Pulumi CLI
+        shell: bash
+        run: |
+          tool_dir="$RUNNER_TEMP/codetelemetry-pulumi"
+          mkdir -p "$tool_dir"
+          curl --fail --silent --show-error --location \
+            https://get.pulumi.com/releases/sdk/pulumi-v3.268.0-linux-x64.tar.gz \
+            --output "$tool_dir/pulumi.tar.gz"
+          echo '903cafeaa9f6327e4bf53a8b7b99ae660f26198acfa804a2f982bf5de3f1de0b  '"$tool_dir/pulumi.tar.gz" | sha256sum --check
+          tar -xzf "$tool_dir/pulumi.tar.gz" -C "$tool_dir"
+          echo "$tool_dir/pulumi" >> "$GITHUB_PATH"
+      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
+        with:
+          artifact-ids: ${{ needs.signed-candidate.outputs.artifact_id }}
+          path: dist/
+      - uses: sigstore/cosign-installer@b9c35392b7c1401bcc77d30c9b07cf4b1c7a7b07
+        with:
+          cosign-release: 'v3.1.4'
+      - name: Independently verify downloaded candidate
+        run: node scripts/verify-artifacts.mjs dist "$GITHUB_SHA" "$RELEASE_VERSION"
+      - name: Exercise both authenticated lifecycles and cleanup
+        env:
+          SMOKE_ENDPOINT: ${{ vars.SMOKE_ENDPOINT }}
+          SMOKE_EXPECTED_SUB: ${{ vars.SMOKE_EXPECTED_SUB }}
+          SMOKE_EXPECTED_ISSUER: ${{ vars.SMOKE_EXPECTED_ISSUER }}
+          SMOKE_DEDICATED_WORKSPACE: ${{ vars.SMOKE_DEDICATED_WORKSPACE }}
+          SMOKE_ID_TOKEN: ${{ secrets.SMOKE_ID_TOKEN }}
+        run: node scripts/authenticated-smoke.mjs dist "$RELEASE_VERSION"
+      - name: Record successful verification
+        run: |
+          printf 'Verified artifact revision: %s\n' "$GITHUB_SHA" >> "$GITHUB_STEP_SUMMARY"
+          echo 'Both authenticated lifecycles and cleanup passed. No registry/npm release was published.' >> "$GITHUB_STEP_SUMMARY"

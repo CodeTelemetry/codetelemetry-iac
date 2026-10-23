@@ -2,8 +2,8 @@
 
 **Disposition: public package release is not cleared.** The code is an unpublished,
 experimental integration. MPL-2.0 has been selected; the final distribution identity and release
-validation are still required before a supported release. Organization repository creation,
-public visibility, and registry/npm publication have not been performed.
+validation are still required before a supported release. The fresh CodeTelemetry organization repository has been created;
+public visibility and registry/npm publication have not been performed.
 
 The pre-publication review examined reachable Git refs, tracked files, HTTP and credential handling, state transitions,
 Terraform and Pulumi behavior, dependency advisories, and the CI trust boundary.
@@ -90,21 +90,19 @@ secrets; there is no privileged `pull_request_target` or artifact-execution path
    redistribution notices alongside final binary/SDK
    artifacts when packaging them.
 2. **Distribution identity:** the intended public owner is CodeTelemetry, while
-   module/source addresses still name ElliotGardiner. Confirm the final names and
-   migration path before publication. The current repository name
-   `codetelemetry-providers` does not satisfy Terraform Registry's required
-   `terraform-provider-{NAME}` repository pattern. A compatible repository name
-   or release-repository strategy is required. See the
+   module/source addresses now use CodeTelemetry. The fresh repository name
+   `terraform-provider-codetelemetry` satisfies the Registry naming pattern.
+   Registry ownership and consumer installation still need verification. See the
    [official publishing requirements](https://developer.hashicorp.com/terraform/registry/providers/publishing).
-3. **Consumer distribution:** there are no signed, versioned, cross-platform
-   provider artifacts or proven Registry/npm installation paths. Tests use local
+3. **Consumer distribution:** the main candidate workflow builds signed, cross-platform
+   artifacts and tests filesystem-mirror/npm-tarball installation. There are no
+   proven Registry/npm publication paths. Tests use local
    binaries and generated SDKs. The generated npm SDK currently uses the local
-   name `@pulumi/codetelemetry`; publishing under that scope must not be assumed
-   available to CodeTelemetry. Choose an owned distribution identity. The planned trusted build on updates to `main` in the CodeTelemetry organization
-   must produce signed artifacts and checksums, then run consumer installation
-   checks and an authenticated smoke test before promoting an installable release.
+   name `@codetelemetry/pulumi-codetelemetry`; publishing under that scope must not be assumed
+   available to CodeTelemetry. Choose an owned distribution identity. The main workflow builds and verifies signed candidates. Its main-only live
+   smoke requires dedicated environment configuration before release readiness.
 4. **Service compatibility:** tests exercise HTTP fixtures, not a deployed service
-   or changing private application main. The planned trusted CodeTelemetry `main` build must run an authenticated smoke
+   or changing private application main. The main-only CodeTelemetry `main` job must pass its authenticated smoke
    test against a dedicated test workspace; supported API versions still need
    to be defined before a supported release.
 5. **Security reporting:** enable and verify GitHub private vulnerability reporting
@@ -122,3 +120,9 @@ The source can be evaluated locally with these limits. This review does not
 authorize changing repository visibility, transferring ownership, or publishing
 artifacts. Complete the [public release plan](PUBLIC_RELEASE_PLAN.md) and obtain
 an explicit publication decision first.
+
+Organization setup limitation: GitHub rejects branch-protection configuration for
+this private repository under its current plan. The main-only release environment
+and read-only default workflow token are configured; required PR/check enforcement
+and private vulnerability reporting must still be enabled and verified before
+public launch. See [release setup](RELEASING.md).

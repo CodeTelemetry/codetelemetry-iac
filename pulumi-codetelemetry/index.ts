@@ -1,5 +1,5 @@
 import * as pulumi from "@pulumi/pulumi";
-import * as codetelemetry from "@pulumi/codetelemetry";
+import * as codetelemetry from "@codetelemetry/pulumi-codetelemetry";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
