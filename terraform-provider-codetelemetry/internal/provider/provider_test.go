@@ -247,3 +247,47 @@ func testIDToken(subject, nonce string) string {
 	raw, _ := json.Marshal(map[string]string{"iss": "https://cognito-idp.example.test/pool", "sub": subject, "token_use": "id", "nonce": nonce})
 	return "eyJhbGciOiJub25lIn0." + base64.RawURLEncoding.EncodeToString(raw) + ".local-test-signature"
 }
+
+// Persist imported state before planning: isolated import verification misses
+// JSON ordering/escaping drift against the user's configuration.
+func TestAccAlarmImportHasNoDrift(t *testing.T) {
+	fixture, err := os.ReadFile("../../examples/rules.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var mu sync.Mutex
+	writes := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		defer mu.Unlock()
+		if r.Method != "GET" {
+			writes++
+			t.Error("import and plan must not write")
+		}
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprintf(w, `{"rules":%s,"rev":7}`, fixture)
+	}))
+	defer server.Close()
+	t.Setenv("CODETELEMETRY_ENDPOINT", server.URL)
+	t.Setenv("CODETELEMETRY_TOKEN", testIDToken("workspace-a", "one"))
+	config := fmt.Sprintf(`provider "codetelemetry" {}
+ resource "codetelemetry_alarm_rules" "main" { rules_json = %q }
+ `, string(fixture))
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: map[string]func() (tfprotov6.ProviderServer, error){"codetelemetry": providerserver.NewProtocol6WithError(New("test")())},
+		Steps: []resource.TestStep{
+			{Config: config, ResourceName: "codetelemetry_alarm_rules.main", ImportState: true, ImportStateId: "workspace", ImportStatePersist: true},
+			{Config: config, PlanOnly: true},
+			{Config: `provider "codetelemetry" {}
+removed {
+from = codetelemetry_alarm_rules.main
+lifecycle { destroy = false }
+}`},
+		},
+	})
+	mu.Lock()
+	defer mu.Unlock()
+	if writes != 0 {
+		t.Fatalf("unexpected writes: %d", writes)
+	}
+}

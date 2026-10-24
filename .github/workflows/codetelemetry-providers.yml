@@ -98,7 +98,9 @@ jobs:
           cache-dependency-path: pulumi-codetelemetry/package-lock.json
       - name: Audit locked npm dependency graph
         working-directory: pulumi-codetelemetry
-        run: npm audit --audit-level=low
+        run: |
+          npm audit --audit-level=low
+          npm audit --prefix ../scripts/auth --audit-level=low
 
   build-candidate:
     outputs:
@@ -269,9 +271,12 @@ jobs:
           SMOKE_EXPECTED_SUB: ${{ vars.SMOKE_EXPECTED_SUB }}
           SMOKE_EXPECTED_ISSUER: ${{ vars.SMOKE_EXPECTED_ISSUER }}
           SMOKE_DEDICATED_WORKSPACE: ${{ vars.SMOKE_DEDICATED_WORKSPACE }}
-          SMOKE_ID_TOKEN: ${{ secrets.SMOKE_ID_TOKEN }}
+          SMOKE_USER_POOL_ID: ${{ vars.SMOKE_USER_POOL_ID }}
+          SMOKE_CLIENT_ID: ${{ vars.SMOKE_CLIENT_ID }}
+          SMOKE_USERNAME: ${{ vars.SMOKE_USERNAME }}
+          SMOKE_PASSWORD: ${{ secrets.SMOKE_PASSWORD }}
         run: |
-          node --input-type=module -e 'import {smokeConfiguration} from "./scripts/smoke-guards.mjs"; smokeConfiguration(process.env);'
+          node --input-type=module -e 'import {authenticationConfiguration} from "./scripts/auth/authenticate.mjs"; authenticationConfiguration(process.env);'
       - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3
         with:
           terraform_version: 1.13.5
@@ -296,14 +301,19 @@ jobs:
           cosign-release: 'v3.1.4'
       - name: Independently verify downloaded candidate
         run: node scripts/verify-artifacts.mjs dist "$GITHUB_SHA" "$RELEASE_VERSION"
-      - name: Exercise both authenticated lifecycles and cleanup
+      - name: Install locked SRP authentication client without credentials
+        run: npm ci --prefix scripts/auth --ignore-scripts --no-audit --no-fund
+      - name: Sign in and exercise both authenticated lifecycles and cleanup
         env:
           SMOKE_ENDPOINT: ${{ vars.SMOKE_ENDPOINT }}
           SMOKE_EXPECTED_SUB: ${{ vars.SMOKE_EXPECTED_SUB }}
           SMOKE_EXPECTED_ISSUER: ${{ vars.SMOKE_EXPECTED_ISSUER }}
           SMOKE_DEDICATED_WORKSPACE: ${{ vars.SMOKE_DEDICATED_WORKSPACE }}
-          SMOKE_ID_TOKEN: ${{ secrets.SMOKE_ID_TOKEN }}
-        run: node scripts/authenticated-smoke.mjs dist "$RELEASE_VERSION"
+          SMOKE_USER_POOL_ID: ${{ vars.SMOKE_USER_POOL_ID }}
+          SMOKE_CLIENT_ID: ${{ vars.SMOKE_CLIENT_ID }}
+          SMOKE_USERNAME: ${{ vars.SMOKE_USERNAME }}
+          SMOKE_PASSWORD: ${{ secrets.SMOKE_PASSWORD }}
+        run: node scripts/run-authenticated-smoke.mjs dist "$RELEASE_VERSION"
       - name: Record successful verification
         run: |
           printf 'Verified artifact revision: %s\n' "$GITHUB_SHA" >> "$GITHUB_STEP_SUMMARY"

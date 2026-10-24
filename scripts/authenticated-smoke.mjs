@@ -1,12 +1,13 @@
 import { readFileSync, writeFileSync, rmSync } from 'node:fs';
 import { resolve, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { smokeConfiguration, assertEmptyBaseline } from './smoke-guards.mjs';
 import { consumer, command } from './consumer.mjs';
 import { importWithRecovery } from './import-with-recovery.mjs';
 
-async function main() {
+export async function runAuthenticatedSmoke(smokeEnv, directory, version) {
   // Refuse all network/CLI work until the isolated principal has been checked.
-  const { endpoint, token } = smokeConfiguration(process.env);
+  const { endpoint, token } = smokeConfiguration(smokeEnv);
   async function get(path) {
     const response = await fetch(endpoint + path, { headers: { Authorization: `Bearer ${token}` }, redirect: 'error', signal: AbortSignal.timeout(30_000) });
     if (!response.ok) throw Error('Authenticated service request failed');
@@ -20,7 +21,7 @@ async function main() {
   }
   async function empty() { assertEmptyBaseline(await get('/api/alert-rules'), await get('/api/enrichment-config')); }
   await empty();
-  const project = consumer(resolve(process.argv[2]), process.argv[3]);
+  const project = consumer(resolve(directory), version);
   const env = { ...project.env, CODETELEMETRY_ENDPOINT: endpoint, CODETELEMETRY_TOKEN: token };
   const terraform = (...args) => command('terraform', args[0] === 'state' ? args : [args[0], '-no-color', ...args.slice(1)], project.tf, env);
   const pulumi = (...args) => command(process.env.PULUMI_BINARY || 'pulumi', [...args, '--non-interactive', '--color', 'never'], project.pulumi, env);
@@ -60,4 +61,6 @@ async function main() {
   }
   console.log('Authenticated Terraform/Pulumi artifact lifecycle and cleanup passed.');
 }
-main().catch(error => { console.error(error.message); process.exitCode = 1; });
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  runAuthenticatedSmoke(process.env, process.argv[2], process.argv[3]).catch(error => { console.error(error.message); process.exitCode = 1; });
+}

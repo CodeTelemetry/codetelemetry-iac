@@ -1,8 +1,12 @@
-export function smokeConfiguration(env) {
+export function smokeScope(env) {
   if (env.SMOKE_DEDICATED_WORKSPACE !== 'true') throw Error('Smoke requires explicit dedicated non-production workspace configuration');
   const url = new URL(env.SMOKE_ENDPOINT);
   if (url.protocol !== 'https:' || url.username || url.password || url.pathname !== '/' || url.search || url.hash) throw Error('Smoke endpoint must be an HTTPS origin');
   if (!env.SMOKE_EXPECTED_SUB || !env.SMOKE_EXPECTED_ISSUER) throw Error('Expected smoke principal must be configured');
+  return { endpoint: url.origin };
+}
+export function smokeConfiguration(env) {
+  const { endpoint } = smokeScope(env);
   const token = env.SMOKE_ID_TOKEN;
   if (!token || token.length > 16384 || token.split('.').length !== 3) throw Error('Missing or malformed smoke ID token');
   let claims;
@@ -11,7 +15,7 @@ export function smokeConfiguration(env) {
   // Configuration guard only. The service must authenticate this token.
   if (claims.sub !== env.SMOKE_EXPECTED_SUB || claims.iss !== env.SMOKE_EXPECTED_ISSUER || claims.token_use !== 'id') throw Error('Smoke principal does not match configured isolated workspace');
   if (!Number.isFinite(claims.exp) || claims.exp * 1000 < Date.now() + 15 * 60_000) throw Error('Smoke ID token must remain valid for at least 15 minutes');
-  return { endpoint: url.origin, token };
+  return { endpoint, token };
 }
 export function assertEmptyBaseline(alarms, enrichment) {
   if (!Array.isArray(alarms.rules) || alarms.rules.length || !Number.isSafeInteger(alarms.rev) || alarms.rev < 0) throw Error('Smoke workspace must have an empty alarm list');

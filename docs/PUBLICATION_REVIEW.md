@@ -100,7 +100,8 @@ secrets; there is no privileged `pull_request_target` or artifact-execution path
    binaries and generated SDKs. The generated npm SDK currently uses the local
    name `@codetelemetry/pulumi-codetelemetry`; publishing under that scope must not be assumed
    available to CodeTelemetry. Choose an owned distribution identity. The main workflow builds and verifies signed candidates. Its main-only live
-   smoke requires dedicated environment configuration before release readiness.
+   smoke uses a dedicated account and fresh SRP ID tokens; its live result must pass
+   before release readiness.
 4. **Service compatibility:** tests exercise HTTP fixtures, not a deployed service
    or changing private application main. The main-only CodeTelemetry `main` job must pass its authenticated smoke
    test against a dedicated test workspace; supported API versions still need
@@ -112,8 +113,8 @@ secrets; there is no privileged `pull_request_target` or artifact-execution path
 
 Enrichment has no conditional-write API; its updates and reset-on-destroy remain
 last-write-wins. Both resources intentionally have destructive destroy semantics
-that are documented. ID tokens expire and there is no refresh/service-account
-flow. Protect Terraform state and saved plans; sensitive attributes remain in
+that are documented. ID tokens expire and the provider has no refresh/service-account
+flow; the CI smoke runner separately signs in using its dedicated SRP account. Protect Terraform state and saved plans; sensitive attributes remain in
 those files. Pulumi secret outputs are encrypted by its configured backend.
 
 The source can be evaluated locally with these limits. This review does not

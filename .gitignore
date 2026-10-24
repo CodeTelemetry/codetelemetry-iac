@@ -17,3 +17,6 @@ crash.log
 
 __pycache__/
 *.pyc
+
+# Isolated smoke authentication dependencies
+node_modules/
