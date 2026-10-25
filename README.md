@@ -64,7 +64,7 @@ import * as pulumi from "@pulumi/pulumi";
 import * as codetelemetry from "@codetelemetry/pulumi-codetelemetry";
 
 new codetelemetry.AlarmRules("alarms", {
-  rulesJson: pulumi.secret(fs.readFileSync("rules.json", "utf8")),
+  rulesJson: pulumi.secret(fs.readFileSync("../terraform-provider-codetelemetry/examples/rules.json", "utf8")),
 });
 
 new codetelemetry.EnrichmentConfig("enrichment", {
