@@ -8,13 +8,13 @@ now use CodeTelemetry, and generated local npm metadata uses
 
 [Release setup and verification](RELEASING.md) describes the implemented main
 candidate build, signing and consumer checks, the main-only authenticated smoke
-job, and the exact environment configuration. Until live credentials are
-configured and that smoke passes, a signed candidate is not cleared for release.
+job, and the exact environment configuration. The dedicated CI account uses a fresh SRP login per run. A signed candidate is
+not cleared for release until its live smoke passes.
 
 Remaining launch work:
 
-- Choose the dedicated non-production smoke principal and a maintained credential
-  acquisition/rotation mechanism. Run both authenticated lifecycles successfully.
+- Maintain the dedicated smoke principal and rotate its environment password as
+  needed. Require both authenticated lifecycles and cleanup to pass.
 - Register the final Terraform Registry namespace and configure its GPG signing
   key and detached checksum signature. Cosign does not replace this requirement.
 - Prove Registry installation, choose a portable/Registry-backed Pulumi bridge,

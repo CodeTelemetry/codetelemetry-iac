@@ -31,7 +31,7 @@ export function consumer(directory, version) {
     dependencies: { '@codetelemetry/pulumi-codetelemetry': `file:${join(directory, `codetelemetry-pulumi-codetelemetry-${version}.tgz`)}`, '@pulumi/pulumi': '3.268.0' } }));
   const env = { ...process.env, TF_CLI_CONFIG_FILE: join(root, 'terraform.rc'), TF_IN_AUTOMATION: 'true', CHECKPOINT_DISABLE: '1',
     PULUMI_BACKEND_URL: pathToFileURL(join(root, 'backend')).href, PULUMI_CONFIG_PASSPHRASE: randomBytes(32).toString('hex'), PULUMI_SKIP_UPDATE_CHECK: 'true' };
-  for (const key of ['CODETELEMETRY_TOKEN', 'CODETELEMETRY_ENDPOINT', 'SMOKE_ID_TOKEN', 'TF_LOG', 'TF_LOG_PATH', 'PULUMI_ACCESS_TOKEN', 'PULUMI_CONFIG', 'PULUMI_STACK']) delete env[key];
+  for (const key of ['CODETELEMETRY_TOKEN', 'CODETELEMETRY_ENDPOINT', 'SMOKE_ID_TOKEN', 'SMOKE_PASSWORD', 'TF_LOG', 'TF_LOG_PATH', 'PULUMI_ACCESS_TOKEN', 'PULUMI_CONFIG', 'PULUMI_STACK']) delete env[key];
   command('terraform', ['init', '-input=false', '-no-color'], tf, env);
   command('terraform', ['providers', 'schema', '-json'], tf, env);
   command('npm', ['install', '--ignore-scripts', '--no-audit', '--no-fund'], pulumi, env);

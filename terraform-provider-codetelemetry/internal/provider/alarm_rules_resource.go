@@ -219,6 +219,7 @@ func (r *alarmRulesResource) Read(ctx context.Context, req resource.ReadRequest,
 	data := alarmRulesModel{types.StringValue("workspace"), jsontypes.NewNormalizedValue(string(remote.Rules)), types.Int64Value(*remote.Revision), types.StringValue(r.c.binding)}
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
+
 func validRulesResponse(remote rulesResponse) error {
 	if remote.Revision == nil || *remote.Revision < 0 {
 		return fmt.Errorf("response is missing a valid revision")
@@ -329,4 +330,26 @@ func (*alarmRulesResource) ImportState(ctx context.Context, req resource.ImportS
 		return
 	}
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), req.ID)...)
+}
+
+// Import has no previous configured representation. Retain equivalent imported
+// JSON and computed fields together, preventing formatting-only API writes.
+func (r *alarmRulesResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
+	if req.State.Raw.IsNull() || req.Plan.Raw.IsNull() {
+		return
+	}
+	var prior, planned alarmRulesModel
+	resp.Diagnostics.Append(req.State.Get(ctx, &prior)...)
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &planned)...)
+	if resp.Diagnostics.HasError() || prior.Rules.IsNull() || prior.Rules.IsUnknown() || planned.Rules.IsNull() || planned.Rules.IsUnknown() {
+		return
+	}
+	if len(prior.Rules.ValueString()) > 300000 || len(planned.Rules.ValueString()) > 300000 {
+		return
+	}
+	same, diags := prior.Rules.StringSemanticEquals(ctx, planned.Rules)
+	resp.Diagnostics.Append(diags...)
+	if same {
+		resp.Diagnostics.Append(resp.Plan.Set(ctx, &prior)...)
+	}
 }

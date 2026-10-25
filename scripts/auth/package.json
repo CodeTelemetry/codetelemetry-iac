@@ -1,0 +1,8 @@
+{
+  "name": "codetelemetry-smoke-auth",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MPL-2.0",
+  "engines": {"node": ">=22"},
+  "dependencies": {"amazon-cognito-identity-js": "6.3.22"}
+}

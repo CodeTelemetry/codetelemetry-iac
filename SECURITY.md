@@ -38,3 +38,12 @@ and saved plan files. Pulumi encrypts values marked secret, but backend access a
 encryption keys still need protection. Logging with extra tool/debug tracing may
 expose data outside the provider's redacted diagnostics; never attach raw traces
 or state files to public reports.
+
+## Release smoke account
+
+Live artifact checks use a dedicated unprivileged Cognito account and an encrypted
+`release-verification` environment password. Only main-branch jobs receive it.
+A pinned SRP client obtains an ID token for each run; no AWS administration
+credentials, static ID tokens or refresh tokens are stored in CI. The account
+must have no customer-team memberships or ingest keys. Rotate its password and
+GitHub secret together. Never log the auth helper's private token output.

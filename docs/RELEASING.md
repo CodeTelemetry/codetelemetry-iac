@@ -58,19 +58,34 @@ principal/workspace with no customer settings:
 | `SMOKE_EXPECTED_ISSUER` | Exact Cognito ID-token issuer |
 | `SMOKE_EXPECTED_SUB` | Exact subject of the isolated test principal |
 | `SMOKE_DEDICATED_WORKSPACE` | Literal `true`, confirming this is a disposable workspace |
+| `SMOKE_USER_POOL_ID` | Cognito pool matching the expected issuer |
+| `SMOKE_CLIENT_ID` | Existing dashboard SRP client ID accepted by the service |
+| `SMOKE_USERNAME` | Dedicated CI-only account username |
 
-Configure the environment **secret** `SMOKE_ID_TOKEN` through GitHub's secret UI
-or a secure credential rotation mechanism. Never paste a token into an issue,
-chat, command argument, or repository file. It must be a service-valid Cognito ID
-token with at least 15 minutes remaining when the smoke runner starts. Claim
-comparison is a configuration guard; the service verifies authentication.
+Configure the environment **secret** `SMOKE_PASSWORD` through GitHub's secret UI
+or an authorized operator process using private stdin. The account is dedicated
+to provider CI, has no privileged Cognito groups, customer-team memberships, or
+ingest keys, and starts with empty alarms and default enrichment. It is an
+isolated test workspace on the live service; it is not a separate service deployment.
 
-A static ID token expires. Continuous unattended main verification therefore
-requires an approved token acquisition/rotation mechanism for that dedicated
-account. No production credentials are copied and no refresh mechanism is
-invented by this setup. Until the workspace and a current token are configured,
-the authenticated job deliberately fails before contacting the service. A signed
-candidate is not considered fully verified for release while that job is failing.
+The main-only smoke job installs the pinned, audited SRP client without credentials.
+Its final step signs in with Cognito's existing `USER_SRP_AUTH` flow, obtains a fresh
+ID token for that run, and validates issuer, subject, audience, token use and expiry
+before contacting the service. It does not change the pool/client's auth policy.
+The auth subprocess has a 60-second timeout, bounded output, and memory-only token
+storage. SDK failures and interactive MFA/password-reset challenges fail closed.
+
+The password and returned token stay out of command arguments, `GITHUB_ENV`, logs,
+state uploads, and artifacts. The short-lived token travels through a captured
+private pipe; the password is removed before invoking Terraform, Pulumi or npm.
+No static ID-token secret or expiring refresh-token secret is required. Rotate the
+Cognito password and the environment secret together if access must be replaced.
+Do not enter a customer's or maintainer's password in this environment.
+
+Never execute `scripts/auth/login.mjs` as a raw Actions step: it is an internal
+helper whose stdout contains the token for its caller. The workflow invokes
+`scripts/run-authenticated-smoke.mjs`, which captures that output privately and
+runs both lifecycles. Ordinary PR tests use mocked auth and need no credentials.
 
 The runner refuses nonempty alarms or non-default enrichment before writing. It
 installs the built artifacts in temporary consumers, tests Terraform create,
