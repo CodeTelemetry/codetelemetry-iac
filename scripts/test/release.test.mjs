@@ -12,7 +12,7 @@ test('artifact validation rejects tampering, incomplete sets, duplicate names, t
   const directory = mkdtempSync(join(tmpdir(), 'ct-artifact-test-'));
   try {
     const revision = 'a'.repeat(40), version = '0.0.0-dev.1';
-    const files = { 'BUILD.json': JSON.stringify({ repository: 'CodeTelemetry/terraform-provider-codetelemetry', revision, version }),
+    const files = { 'BUILD.json': JSON.stringify({ repository: 'CodeTelemetry/codetelemetry-iac', revision, version }),
       [`codetelemetry-pulumi-codetelemetry-${version}.tgz`]: 'sdk' };
     for (const os of ['linux', 'darwin', 'windows']) for (const arch of ['amd64', 'arm64']) files[`terraform-provider-codetelemetry_${version}_${os}_${arch}.zip`] = 'binary';
     let sums = '';
@@ -24,6 +24,12 @@ test('artifact validation rejects tampering, incomplete sets, duplicate names, t
     const check = () => verifyContents(directory, revision, version);
     writeFileSync(manifest, sums); check();
     assert.throws(() => verifyContents(directory, 'b'.repeat(40), version), /provenance/);
+    // A rename must not admit an old repository's artifacts even if all hashes match.
+    const oldBuild = JSON.stringify({ repository: 'CodeTelemetry/terraform-provider-codetelemetry', revision, version });
+    writeFileSync(join(directory, 'BUILD.json'), oldBuild);
+    writeFileSync(manifest, sums.replace(createHash('sha256').update(files['BUILD.json']).digest('hex'), createHash('sha256').update(oldBuild).digest('hex')));
+    assert.throws(check, /provenance/);
+    writeFileSync(join(directory, 'BUILD.json'), files['BUILD.json']);
     writeFileSync(manifest, sums + sums.split('\n')[0] + '\n'); assert.throws(check, /duplicate/);
     writeFileSync(manifest, sums.split('\n').slice(1).join('\n')); assert.throws(check, /Missing/);
     writeFileSync(manifest, `${'a'.repeat(64)}  ../outside\n`); assert.throws(check, /Unexpected/);

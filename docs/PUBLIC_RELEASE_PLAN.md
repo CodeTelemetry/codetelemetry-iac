@@ -1,29 +1,51 @@
-# Public CodeTelemetry release plan
+# Public source and package release plan
 
-The fresh private repository is `CodeTelemetry/terraform-provider-codetelemetry`.
-It starts from the hardened source snapshot; earlier private GitHub pull-request
-refs were not imported. It uses MPL-2.0. The Go module and provider source address
-now use CodeTelemetry, and generated local npm metadata uses
-`@codetelemetry/pulumi-codetelemetry` (publishing rights still need verification).
+`CodeTelemetry/codetelemetry-iac` is the shared source repository for Terraform
+(HCL) and Pulumi (TypeScript). It was created from the hardened source snapshot;
+private application history, pull requests, issues, and customer data were not
+imported. The source uses MPL-2.0.
 
-[Release setup and verification](RELEASING.md) describes the implemented main
-candidate build, signing and consumer checks, the main-only authenticated smoke
-job, and the exact environment configuration. The dedicated CI account uses a fresh SRP login per run. A signed candidate is
-not cleared for release until its live smoke passes.
+Source visibility and stable package distribution are separate. The source can
+be built locally using either integration's README. Main builds produce signed
+candidates, with fresh consumer installation and authenticated lifecycle checks
+for both integrations; these builds do not publish stable packages.
 
-Remaining launch work:
+## Public source controls
 
-- Maintain the dedicated smoke principal and rotate its environment password as
-  needed. Require both authenticated lifecycles and cleanup to pass.
-- Register the final Terraform Registry namespace and configure its GPG signing
-  key and detached checksum signature. Cosign does not replace this requirement.
-- Prove Registry installation, choose a portable/Registry-backed Pulumi bridge,
-  and verify npm scope rights before promoting a stable package.
-- Recheck private vulnerability reporting, organization independent review
-  integration, required checks and final release artifact notices.
-- Make the repository public and announce a release only when explicitly requested
-  and the launch checks pass. No main build publishes a package automatically.
+Before changing visibility, require a clean exact-head independent code review,
+both validation matrix jobs, publication security, and a successful signed main
+candidate including authenticated smoke and cleanup under the renamed repository
+identity. Enable and verify main protection and private vulnerability reporting
+when public visibility makes those controls available. Keep live credentials in
+the main-only `release-verification` environment.
 
-GitHub currently blocks branch protection for this private organization repository
-under its plan. Required checks and admin enforcement must be activated after a
-plan upgrade or approved public visibility; they are not currently enforced.
+## Terraform / HCL distribution
+
+The binary remains `terraform-provider-codetelemetry`, and the provider source
+address remains `CodeTelemetry/codetelemetry`. The shared repository rename does
+not change resource names or saved state identities.
+
+The [Terraform Registry requires](https://developer.hashicorp.com/terraform/registry/providers/publishing)
+a public GitHub repository named `terraform-provider-{NAME}`. Before Registry
+onboarding, create a separate `CodeTelemetry/terraform-provider-codetelemetry`
+distribution repository, select the exact reviewed source revision from this
+monorepo, and configure organization-controlled GPG signing with detached checksum
+signatures. Cosign signatures supplement that requirement. Prove a fresh Registry
+installation before announcing a supported Terraform release.
+
+## Pulumi / TypeScript distribution
+
+The generated local SDK is `@codetelemetry/pulumi-codetelemetry`. It currently
+uses Pulumi's pinned Terraform provider bridge and needs the matching executable
+at runtime. Choose a portable or Registry-backed distribution, verify npm scope
+publishing rights, and prove installation into a clean project before promoting
+a stable npm package. Other Pulumi SDK languages are not generated or validated
+by this repository.
+
+## Ongoing verification
+
+Maintain the isolated CI account and rotate its environment password as needed.
+Require both live lifecycles and cleanup on every main candidate. Recheck
+third-party notices and dependency advisories for the exact release artifacts.
+See [release setup and verification](RELEASING.md) for signing identities,
+credential boundaries, and verification commands.

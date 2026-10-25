@@ -60,9 +60,12 @@ A push to `main` checks that pushed commit; pull requests check the merged resul
 with the current base branch. The workflow verifies that the checkout matches the triggering SHA, records that
 revision in the job summary, lints itself with `actionlint`, and checks both
 validation entrypoints with ShellCheck.
-Both matrix checks and Publication security are required by `main` protection.
+Public repository `main` protection must require both matrix checks and
+Publication security; verify these settings when publishing the source.
 The security job scans fetched Git history using Gitleaks, checks reachable Go
-vulnerabilities in production and test code using govulncheck, and audits the locked npm dependency graph.
+vulnerabilities in production and test code using govulncheck, and audits the locked npm dependency graphs for the Pulumi SDK and CI authentication.
+The script tests also check artifact admission, credential redaction and SRP
+authentication failure handling.
 Scanner findings and network errors fail the job; there is no silent skip.
 
 Tool overrides are supported for local installations outside PATH (use absolute
@@ -78,4 +81,15 @@ CodeTelemetry application, track changes in its private repository, or prove
 registry installation. Application compatibility and consumer distribution need
 separate validation. See the [public release plan](PUBLIC_RELEASE_PLAN.md).
 
-Release artifact integrity and authenticated checks are described in [release setup](RELEASING.md). Ordinary PR validation uses local fixtures and requires no live credentials.
+## Signed candidates and live verification
+
+On main, separate jobs build and sign the exact source revision, independently
+verify its identity and checksums, and install Terraform archives and the Pulumi
+SDK tarball into clean consumers. A main-only job obtains a fresh ID token for an
+isolated test account and runs Terraform create/update/import/no-drift/destroy,
+then Pulumi create/update/refresh/no-drift/destroy. Cleanup must restore empty
+alarms and default enrichment. These checks exercise the live CodeTelemetry
+service in addition to the local fixture suites.
+
+See [release setup](RELEASING.md) for credentials and signature verification.
+Ordinary PR validation uses local fixtures and requires no live credentials.

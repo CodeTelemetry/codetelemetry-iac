@@ -13,6 +13,6 @@ bash scripts/validate.sh
 Use `--terraform` or `--pulumi` to select one suite. The command formerly located
 in this package forwards to that repository-level entrypoint for compatibility.
 
-The planned public home is the CodeTelemetry organization. See the
+The shared source home is `CodeTelemetry/codetelemetry-iac`. See the
 [public release plan](../docs/PUBLIC_RELEASE_PLAN.md) for ownership, distribution,
 licensing, signing, consumer-installation tests, and the private-source boundary.

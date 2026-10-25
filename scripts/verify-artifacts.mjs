@@ -25,7 +25,7 @@ export function verifyContents(directory, revision, version) {
   }
   if (found.size !== expected.length) throw Error('Missing artifacts');
   const info = JSON.parse(readFileSync(join(directory, 'BUILD.json'), 'utf8'));
-  if (info.revision !== revision || info.version !== version || info.repository !== 'CodeTelemetry/terraform-provider-codetelemetry') throw Error('Source provenance mismatch');
+  if (info.revision !== revision || info.version !== version || info.repository !== 'CodeTelemetry/codetelemetry-iac') throw Error('Source provenance mismatch');
   return info;
 }
 
@@ -34,7 +34,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   if (!directory || !revision || !version) throw Error('Usage: node scripts/verify-artifacts.mjs DIST EXPECTED_SHA EXPECTED_VERSION');
   execFileSync('cosign', ['verify-blob', join(directory, 'SHA256SUMS'),
     '--bundle', join(directory, 'SHA256SUMS.sigstore.json'),
-    '--certificate-identity', 'https://github.com/CodeTelemetry/terraform-provider-codetelemetry/.github/workflows/codetelemetry-providers.yml@refs/heads/main',
+    '--certificate-identity', 'https://github.com/CodeTelemetry/codetelemetry-iac/.github/workflows/codetelemetry-providers.yml@refs/heads/main',
     '--certificate-oidc-issuer', 'https://token.actions.githubusercontent.com',
     '--certificate-github-workflow-sha', revision,
   ], { stdio: 'inherit', timeout: 180_000 });

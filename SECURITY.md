@@ -11,11 +11,10 @@ unpatched Go 1.26.0 or Go 1.27.0.
 Do not post credentials, webhook secrets, customer telemetry, state files, saved
 plans, or exploit details in public issues or pull requests.
 
-Use this repository's **Security → Report a vulnerability** flow when private
-vulnerability reporting is available. Before public publication, maintainers must
-enable that feature and verify the reporting link under the final CodeTelemetry
-organization repository. Until that channel is enabled, use an existing private
-maintainer contact rather than opening a public report.
+Use the [private vulnerability reporting form](https://github.com/CodeTelemetry/codetelemetry-iac/security/advisories/new)
+under **Security → Report a vulnerability**. Maintainers must enable and verify
+this channel when making the repository public. If the private form is unavailable,
+use an existing private maintainer contact rather than posting a public report.
 
 Include the affected commit/version, tool versions, expected and observed
 behavior, and a minimal reproduction using dummy credentials. Maintainers should

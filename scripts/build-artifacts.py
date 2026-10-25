@@ -74,7 +74,7 @@ metadata['version'] = VERSION
 (sdk / 'bin/package.json').write_text(json.dumps(metadata, indent=2) + '\n')
 subprocess.run(['npm', 'pack', '--ignore-scripts', '--pack-destination', str(DIST)], cwd=sdk, check=True, timeout=120)
 (DIST / 'BUILD.json').write_text(json.dumps({
-    'repository': 'CodeTelemetry/terraform-provider-codetelemetry', 'revision': REVISION,
+    'repository': 'CodeTelemetry/codetelemetry-iac', 'revision': REVISION,
     'version': VERSION, 'platforms': platforms,
     'run': os.environ.get('GITHUB_RUN_ID'), 'attempt': os.environ.get('GITHUB_RUN_ATTEMPT'),
     'go': subprocess.check_output([go, 'version'], text=True).strip(),

@@ -3,7 +3,8 @@
 **Disposition: public package release is not cleared.** The code is an unpublished,
 experimental integration. MPL-2.0 has been selected; the final distribution identity and release
 validation are still required before a supported release. The fresh CodeTelemetry organization repository has been created;
-public visibility and registry/npm publication have not been performed.
+the source home is now `CodeTelemetry/codetelemetry-iac`. Stable Registry/npm
+package publication remains separate from source visibility.
 
 The pre-publication review examined reachable Git refs, tracked files, HTTP and credential handling, state transitions,
 Terraform and Pulumi behavior, dependency advisories, and the CI trust boundary.
@@ -76,11 +77,11 @@ secrets; there is no privileged `pull_request_target` or artifact-execution path
 - No production JWT, customer telemetry, state, plan, or private application source
   was found in tracked content. Credential examples are placeholders or dynamically
   generated dummy tokens used only by local HTTP fixtures.
-- The private repository has historical pull-request refs and cached commits.
-  Replacing branch history cannot erase GitHub-owned refs. Current docs are
-  self-contained; the planned public CodeTelemetry repository must be created
-  fresh from the squashed snapshot, without importing private refs, issues, or
-  pull requests. Do not transfer this private repository for publication.
+- The original personal repository has private pull-request refs and cached commits.
+  This CodeTelemetry organization repository was created separately from the
+  hardened snapshot; those original private refs, issues, and pull requests were
+  not imported. The organization repository's subsequent IaC changes and PRs are
+  part of its public source history. Keep the original personal repository private.
 - Automated scanners can miss secrets and vulnerabilities. They supplement the
   manual inspection and lifecycle tests; they do not establish absence of risk.
 
@@ -90,9 +91,10 @@ secrets; there is no privileged `pull_request_target` or artifact-execution path
    redistribution notices alongside final binary/SDK
    artifacts when packaging them.
 2. **Distribution identity:** the intended public owner is CodeTelemetry, while
-   module/source addresses now use CodeTelemetry. The fresh repository name
-   `terraform-provider-codetelemetry` satisfies the Registry naming pattern.
-   Registry ownership and consumer installation still need verification. See the
+   module/source addresses now use CodeTelemetry. The shared source repository is
+   `codetelemetry-iac`. Terraform Registry publishing needs a separate
+   `terraform-provider-codetelemetry` distribution repository. Registry ownership
+   and consumer installation still need verification. See the
    [official publishing requirements](https://developer.hashicorp.com/terraform/registry/providers/publishing).
 3. **Consumer distribution:** the main candidate workflow builds signed, cross-platform
    artifacts and tests filesystem-mirror/npm-tarball installation. There are no
@@ -122,8 +124,8 @@ authorize changing repository visibility, transferring ownership, or publishing
 artifacts. Complete the [public release plan](PUBLIC_RELEASE_PLAN.md) and obtain
 an explicit publication decision first.
 
-Organization setup limitation: GitHub rejects branch-protection configuration for
-this private repository under its current plan. The main-only release environment
-and read-only default workflow token are configured; required PR/check enforcement
-and private vulnerability reporting must still be enabled and verified before
-public launch. See [release setup](RELEASING.md).
+Public source controls: private-plan branch-protection restrictions no longer
+apply once the repository is public. Enable and verify required PR/check protection,
+conversation resolution, admin enforcement and private vulnerability reporting at
+launch. Keep the release environment main-only and workflow defaults read-only.
+See [release setup](RELEASING.md).
