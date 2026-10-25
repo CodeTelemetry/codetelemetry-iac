@@ -4,7 +4,7 @@ import (
 	"context"
 	"flag"
 
-	"github.com/CodeTelemetry/terraform-provider-codetelemetry/terraform-provider-codetelemetry/internal/provider"
+	"github.com/CodeTelemetry/codetelemetry-iac/terraform-provider-codetelemetry/internal/provider"
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 )
 

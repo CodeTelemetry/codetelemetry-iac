@@ -1,4 +1,4 @@
-module github.com/CodeTelemetry/terraform-provider-codetelemetry/terraform-provider-codetelemetry
+module github.com/CodeTelemetry/codetelemetry-iac/terraform-provider-codetelemetry
 
 go 1.26.0
 

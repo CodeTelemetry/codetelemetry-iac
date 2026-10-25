@@ -1,7 +1,9 @@
 # Contributing
 
-The project is currently an unpublished integration. Its home is the fresh
-CodeTelemetry organization repository. Contributions are provided
+The shared source home is `CodeTelemetry/codetelemetry-iac`. It contains a
+Terraform provider for HCL configuration and a Pulumi TypeScript integration
+backed by the same Go implementation. Stable Registry/npm packages have not been
+published. Contributions are provided
 under the [Mozilla Public License 2.0](LICENSE). Third-party code must retain its
 required license notices.
 

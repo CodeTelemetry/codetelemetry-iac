@@ -1,6 +1,6 @@
 # Verified release candidates
 
-The repository is `CodeTelemetry/terraform-provider-codetelemetry`. It was seeded
+The repository is `CodeTelemetry/codetelemetry-iac`. It was seeded
 from a hardened source snapshot, not transferred or mirrored from the earlier
 private repository. The license is MPL-2.0. Public visibility and package
 publication are separate launch steps.
@@ -29,16 +29,20 @@ The candidate version is `0.0.0-dev.RUN_NUMBER`. These builds never create a Git
 release or push a Terraform Registry/npm version. Candidate installation tests
 are independent of the Registry; they do not establish Registry distribution.
 
-## Repository controls pending activation
+## Repository controls
 
-GitHub currently rejects branch protection for this private organization repository
-under its plan. Default workflow permissions are read-only and the release
-verification environment allows only `main`, but these are not a substitute for
-enforced PR/required-check protection. Upgrade the organization's plan or approve
-public visibility after review, then enable required checks, PR reviews, stale
-review dismissal, conversation resolution, and admin enforcement. Private
-vulnerability reporting also needs activation/verification before public launch.
-Do not treat these unavailable controls as configured.
+The source home is `CodeTelemetry/codetelemetry-iac`; Terraform HCL and Pulumi
+TypeScript share this candidate pipeline. Only this repository's main workflow
+identity is accepted for new candidate signatures. Candidates signed before the
+rename use the old identity and must be verified with that revision's trusted
+verifier; do not broaden the current identity policy to accept both.
+
+Public source launch requires main protection for both matrix jobs and Publication
+security, stale-review dismissal, conversation resolution, and admin enforcement.
+Private vulnerability reporting must be enabled and verified. These controls were
+unavailable under the private organization's plan, so verify them after making
+the repository public. The default workflow token is read-only, and the
+release-verification environment permits only main.
 
 ## Authenticated verification
 
@@ -115,7 +119,7 @@ node scripts/verify-artifacts.mjs /absolute/path/to/download EXPECTED_SHA 0.0.0-
 The verification requires this certificate identity:
 
 ```
-https://github.com/CodeTelemetry/terraform-provider-codetelemetry/.github/workflows/codetelemetry-providers.yml@refs/heads/main
+https://github.com/CodeTelemetry/codetelemetry-iac/.github/workflows/codetelemetry-providers.yml@refs/heads/main
 ```
 
 and issuer `https://token.actions.githubusercontent.com`. Do not disable certificate,
@@ -126,7 +130,9 @@ it does not replace the security or authenticated service checks.
 
 ## Promote a public release
 
-Before adding release promotion, configure the Terraform Registry namespace and
+Before adding release promotion, create the separate Terraform distribution
+repository described in the [package release plan](PUBLIC_RELEASE_PLAN.md), then
+configure the Terraform Registry namespace and
 organization-controlled GPG key/fingerprint for its required detached checksum
 signature. A Cosign bundle supplements that signature; it is not a substitute for
 Terraform Registry's signing requirements. Reserve/verify npm publishing rights

@@ -107,7 +107,7 @@ jobs:
       artifact_id: ${{ steps.upload.outputs.artifact-id }}
     name: Build candidate
     needs: [validation, publication-security]
-    if: github.repository == 'CodeTelemetry/terraform-provider-codetelemetry' && github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    if: github.repository == 'CodeTelemetry/codetelemetry-iac' && github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     permissions:
@@ -164,7 +164,7 @@ jobs:
       artifact_id: ${{ steps.upload.outputs.artifact-id }}
     name: Signed candidate
     needs: build-candidate
-    if: github.repository == 'CodeTelemetry/terraform-provider-codetelemetry' && github.ref == 'refs/heads/main'
+    if: github.repository == 'CodeTelemetry/codetelemetry-iac' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
@@ -204,7 +204,7 @@ jobs:
   consumer-install:
     name: Artifact consumer install
     needs: signed-candidate
-    if: github.repository == 'CodeTelemetry/terraform-provider-codetelemetry' && github.ref == 'refs/heads/main'
+    if: github.repository == 'CodeTelemetry/codetelemetry-iac' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     env:
@@ -247,7 +247,7 @@ jobs:
   authenticated-smoke:
     name: Authenticated artifact smoke
     needs: [signed-candidate, consumer-install]
-    if: github.repository == 'CodeTelemetry/terraform-provider-codetelemetry' && github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    if: github.repository == 'CodeTelemetry/codetelemetry-iac' && github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     # Serialize writes to the singleton test workspace. Never cancel a live cleanup.
