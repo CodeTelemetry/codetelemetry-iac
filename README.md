@@ -135,3 +135,45 @@ through the repository's Security tab.
 
 [Mozilla Public License 2.0](LICENSE) (SPDX: `MPL-2.0`). Third-party dependencies
 retain their own licenses.
+
+## Named organization contexts
+
+Connect/MCP and these providers share the version-1 workspace format. Create a
+context with `@codetelemetry/connect bootstrap <name>` or MCP's
+`bootstrap_workspace`, then run Terraform inside the bound repository. The
+`.codetelemetry/workspace.json` binding is nonsecret. Credentials are loaded from
+`CODETELEMETRY_CONTEXT_HOME`, or the default per-user CodeTelemetry configuration
+directory; they never become a provider argument or resource state attribute.
+
+```hcl
+provider "codetelemetry" {
+  workspace = "acme"
+}
+
+resource "codetelemetry_grader_config" "instructions" {
+  checks_json = file("grader-checks.json")
+}
+```
+
+With no explicit `workspace`, the provider discovers the repository binding or
+uses `CODETELEMETRY_WORKSPACE`. It verifies the account, organization and billing
+scope live. A funded ingest budget is not required to configure a policy. Context
+credentials use the existing Grader agent API, preserving unrelated checks and
+requested features. Destroy removes only managed IDs; publication remains an
+explicit MCP operation. Do not manage the same checks from two states.
+
+For existing management-token automation, set `organization_id` or
+`CODETELEMETRY_ORGANIZATION_ID`. Requests then include the explicit organization
+selection; the service authorizes current membership and permissions. Omitting
+organization selection retains the personal behavior and existing state identity.
+Changing organization, account or endpoint refuses existing bound state until an
+intentional import. Legacy unbound state is never automatically adopted into an
+organization. Ingest contexts support Grader configuration only; alarm rules need
+a management token. Organization enrichment is currently unsupported and fails
+before HTTP rather than changing personal settings.
+
+A context supports credential rotation without changing its identity. Conflicting
+explicit endpoint/token/organization values and an existing repository binding
+fail closed. Context files are bounded to 64 KiB, checked for version, links,
+ownership and private POSIX permissions. Protect Terraform state and plans because
+check definitions and alert destinations may still be sensitive.

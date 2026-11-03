@@ -7,6 +7,8 @@ const config = new pulumi.Config();
 const provider = new codetelemetry.Provider("workspace", {
   endpoint: config.get("endpoint"),
   token: config.getSecret("token"),
+  organizationId: config.get("organizationId"),
+  workspace: config.get("workspace"),
 });
 
 // Share the complete AlertRule example with Terraform. Set rulesPath to a JSON
@@ -15,7 +17,8 @@ const rulesPath = config.get("rulesPath") ?? "../terraform-provider-codetelemetr
 const rulesJson = JSON.stringify(JSON.parse(readFileSync(resolve(rulesPath), "utf8")));
 const protect = config.getBoolean("protect") ?? false;
 
-const alarms = new codetelemetry.AlarmRules("alarms", {
+const graderOnly = config.getBoolean("graderOnly") ?? false;
+const alarms = graderOnly ? undefined : new codetelemetry.AlarmRules("alarms", {
   rulesJson: pulumi.secret(rulesJson),
 }, {
   provider,
@@ -23,7 +26,7 @@ const alarms = new codetelemetry.AlarmRules("alarms", {
   import: config.getBoolean("importAlarms") ? "workspace" : undefined,
 });
 
-const enrichment = new codetelemetry.EnrichmentConfig("enrichment", {
+const enrichment = graderOnly ? undefined : new codetelemetry.EnrichmentConfig("enrichment", {
   mintFloor: config.getNumber("mintFloor") ?? 0.6,
   mergeThreshold: config.getNumber("mergeThreshold") ?? 0.86,
   consolidationCadence: config.get("consolidationCadence") ?? "nightly",
@@ -34,5 +37,12 @@ const enrichment = new codetelemetry.EnrichmentConfig("enrichment", {
   import: config.getBoolean("importEnrichment") ? "workspace" : undefined,
 });
 
-export const alarmRevision = alarms.revision;
-export const enrichmentRevision = enrichment.configRevision;
+export const alarmRevision = alarms?.revision;
+export const enrichmentRevision = enrichment?.configRevision;
+
+// Context credentials support Grader configuration without a pasted JWT.
+const graderChecksPath = config.get("graderChecksPath");
+const grader = graderChecksPath ? new codetelemetry.GraderConfig("grader", {
+  checksJson: pulumi.secret(JSON.stringify(JSON.parse(readFileSync(resolve(graderChecksPath), "utf8")))),
+}, {provider,protect,import:config.getBoolean("importGrader")?"workspace":undefined}) : undefined;
+export const graderRevision=grader?.revision;

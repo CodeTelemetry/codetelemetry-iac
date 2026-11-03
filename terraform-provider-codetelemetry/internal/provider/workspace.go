@@ -45,6 +45,9 @@ func workspaceBinding(endpoint, token string) (string, error) {
 func (c *client) checkWorkspace(prior types.String) error {
 	// Legacy states have no binding. Preserve readability and establish it on the
 	// first refresh. Users must verify their original credentials before upgrading.
+	if prior.IsNull() && (c.organization != "" || c.ingest) {
+		return fmt.Errorf("legacy unbound state cannot be adopted into an organization or context; import the intended workspace explicitly")
+	}
 	if !prior.IsNull() && !prior.IsUnknown() && prior.ValueString() != c.binding {
 		return fmt.Errorf("workspace identity changed; refusing to read or write a different workspace. Restore the original endpoint and credentials, or use a separate state/stack and import intentionally")
 	}

@@ -1,6 +1,6 @@
 # Code Telemetry Terraform provider
 
-Manage the authenticated workspace's application alarms and enrichment settings.
+Manage workspace alarms, enrichment settings and selected Grader draft checks.
 This is a local, unpublished provider built with the Terraform Plugin Framework.
 It does not create AWS CloudWatch alarms or deploy the Code Telemetry service.
 For the same resources in TypeScript, see the [Pulumi integration](../pulumi-codetelemetry/README.md), which bridges this provider without duplicating its behavior.
@@ -135,3 +135,8 @@ it intentionally. Do not remove the binding to bypass a mismatch.
 
 Security dependency fixes raise the local build minimum to Go 1.26; CI uses patched
 Go 1.26.10 and 1.27.3 toolchains. See [SECURITY.md](../SECURITY.md).
+
+Organization setup and shared Connect/MCP workspace contexts are documented in
+[the repository README](../README.md#named-organization-contexts). The provider now
+supports `workspace`, `organization_id`, and `codetelemetry_grader_config`; existing
+personal configurations remain compatible.

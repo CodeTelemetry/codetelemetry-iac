@@ -15,8 +15,11 @@ import (
 const maxResponseBytes = 2 * 1024 * 1024
 
 type client struct {
+	expected        *contextScope
 	endpoint, token string
 	binding         string
+	organization    string
+	ingest          bool
 	http            *http.Client
 }
 
@@ -40,6 +43,19 @@ func newClient(endpoint, token string) (*client, error) {
 // No retries: a timed-out write may already have committed. Never include remote
 // bodies or transport errors in diagnostics: either can contain credentials.
 func (c *client) request(ctx context.Context, method, path string, body, result any) error {
+	if c.ingest && !strings.HasPrefix(path, "/api/agent/grader") && path != "/api/connectivity/check" {
+		return fmt.Errorf("this resource needs a management token; workspace ingest credentials support Grader configuration only")
+	}
+	if c.organization != "" && !c.ingest {
+		if strings.HasPrefix(path, "/api/enrichment-config") {
+			return fmt.Errorf("organization enrichment configuration is unavailable; refusing to modify personal settings")
+		}
+		separator := "?"
+		if strings.Contains(path, "?") {
+			separator = "&"
+		}
+		path += separator + "team=" + url.QueryEscape(c.organization)
+	}
 	var data []byte
 	var err error
 	if body != nil {
@@ -57,12 +73,16 @@ func (c *client) request(ctx context.Context, method, path string, body, result 
 	}
 	req.Header.Set("Authorization", "Bearer "+c.token)
 	req.Header.Set("Content-Type", "application/json")
+	if c.expected != nil {
+		scope, _ := json.Marshal(c.expected)
+		req.Header.Set("X-CodeTelemetry-Workspace", string(scope))
+	}
 	resp, err := c.http.Do(req)
 	if err != nil {
 		return fmt.Errorf("Code Telemetry request failed; check connectivity, timeout, and credentials")
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+	if (resp.StatusCode < 200 || resp.StatusCode >= 300) && !(path == "/api/connectivity/check" && resp.StatusCode == http.StatusPaymentRequired) {
 		if resp.StatusCode == http.StatusConflict {
 			return fmt.Errorf("Code Telemetry returned HTTP 409: configuration changed; refresh and plan again")
 		}
@@ -79,4 +99,8 @@ func (c *client) request(ctx context.Context, method, path string, body, result 
 		return fmt.Errorf("invalid Code Telemetry JSON response")
 	}
 	return nil
+}
+
+func (c *client) verifyContext(ctx context.Context, scope contextScope, result any) error {
+	return c.request(ctx, "POST", "/api/connectivity/check", map[string]any{"scopeOnly": true, "expected": scope}, result)
 }

@@ -7,7 +7,7 @@
   "scripts": {
     "setup": "node scripts/setup.mjs",
     "typecheck": "tsc --noEmit",
-    "test": "npm run typecheck && node --test test/lifecycle.test.mjs"
+    "test": "npm run typecheck && node --test test/lifecycle.test.mjs test/grader.test.mjs"
   },
   "engines": {
     "node": ">=22"
@@ -23,5 +23,9 @@
   "allowScripts": {
     "file:sdks/codetelemetry": true
   },
-  "license": "MPL-2.0"
+  "license": "MPL-2.0",
+  "overrides": {
+    "glob": "14.0.3",
+    "minimatch": "11.0.4"
+  }
 }

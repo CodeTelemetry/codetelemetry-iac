@@ -324,12 +324,15 @@ func (r *alarmRulesResource) Delete(ctx context.Context, req resource.DeleteRequ
 		resp.Diagnostics.AddError("Cannot clear alarm rules", err.Error())
 	}
 }
-func (*alarmRulesResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+func (r *alarmRulesResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	if req.ID != "workspace" {
 		resp.Diagnostics.AddError("Invalid import ID", "Use workspace; the token selects the authenticated workspace.")
 		return
 	}
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), req.ID)...)
+	if r.c != nil {
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("workspace_binding"), r.c.binding)...)
+	}
 }
 
 // Import has no previous configured representation. Retain equivalent imported
