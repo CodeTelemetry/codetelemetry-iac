@@ -54,3 +54,22 @@ workspace binding, legacy-state migration, credential handling, and reporting.
 These are the contracts exercised by the local HTTP fixtures. The automated
 suites do not assert compatibility with every deployed service version; a live
 service smoke remains necessary before declaring a supported public release.
+
+## Explicit organization selection and workspace contexts
+
+Management-token requests for organization-aware resources add `?team=<id>`.
+The organization ID is part of resource workspace bindings. Unsupported org
+resources are rejected locally. Personal requests and their existing bindings
+are unchanged. The Grader resource uses GET `/api/validation/policy` and PUT
+`/api/validation/policy/draft` for management auth, with conditional revision and
+managed-check ownership.
+
+Saved contexts use the public Connect/MCP version-1 JSON contract. Scope is
+verified with POST `/api/connectivity/check` (`scopeOnly: true`, full `expected`
+scope). HTTP 402 is accepted only when it still attests that exact scope.
+Grader reads use POST `/api/agent/grader` with bounded ten-check pages; updates
+use POST `/api/agent/grader/configure` with expectedRevision, selected upserts,
+managed removals and preserved requestedFeatures. Every request sends the full
+`X-CodeTelemetry-Workspace` scope assertion. The service refuses a key rescope
+before resolving the target policy. No key is stored in resource state or echoed
+in diagnostics. Agent credentials never reach unrelated management endpoints.

@@ -168,3 +168,7 @@ it intentionally. Do not remove the binding to bypass a mismatch.
 
 Security dependency fixes raise the local build minimum to Go 1.26; CI uses patched
 Go 1.26.10 and 1.27.3 toolchains. See [SECURITY.md](../SECURITY.md).
+
+For an organization Grader with a saved Connect/MCP context, set `workspace`,
+`graderOnly: true`, and `graderChecksPath`. The bridge uses the same Go provider
+scope checks and context credential path as Terraform. Publication is separate.

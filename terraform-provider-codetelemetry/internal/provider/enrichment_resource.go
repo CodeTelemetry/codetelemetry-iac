@@ -169,10 +169,13 @@ func (r *enrichmentResource) Delete(ctx context.Context, req resource.DeleteRequ
 		resp.Diagnostics.AddError("Cannot reset enrichment config", err.Error())
 	}
 }
-func (*enrichmentResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+func (r *enrichmentResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	if req.ID != "workspace" {
 		resp.Diagnostics.AddError("Invalid import ID", "Use workspace; the token selects the authenticated workspace.")
 		return
 	}
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), req.ID)...)
+	if r.c != nil {
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("workspace_binding"), r.c.binding)...)
+	}
 }

@@ -7,7 +7,7 @@
   "scripts": {
     "setup": "node scripts/setup.mjs",
     "typecheck": "tsc --noEmit",
-    "test": "npm run typecheck && node --test test/lifecycle.test.mjs"
+    "test": "npm run typecheck && node --test test/lifecycle.test.mjs test/grader.test.mjs"
   },
   "engines": {
     "node": ">=22"
