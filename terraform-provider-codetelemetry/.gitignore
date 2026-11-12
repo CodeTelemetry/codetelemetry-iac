@@ -1,6 +1,0 @@
-/bin/
-.terraform/
-*.tfstate
-*.tfstate.*
-*.tfplan
-crash.log

@@ -1,9 +1,9 @@
 # Security policy
 
-These integrations are unpublished and experimental. There is no supported
-public release yet; use the latest reviewed commit for local evaluation. Build
-with a supported, patched Go toolchain: the reviewed patch levels are 1.26.10
-and 1.27.3. Go 1.26 is the language-version floor, not a recommendation to use
+The provider is experimental. Security fixes are made on `main` and shipped in
+the next release; use the latest release. When building from source, use a
+supported, patched Go toolchain: the reviewed patch levels are 1.26.11 and
+1.27.4. Go 1.26 is the language-version floor, not a recommendation to use
 unpatched Go 1.26.0 or Go 1.27.0.
 
 ## Reporting a vulnerability
@@ -11,7 +11,7 @@ unpatched Go 1.26.0 or Go 1.27.0.
 Do not post credentials, webhook secrets, customer telemetry, state files, saved
 plans, or exploit details in public issues or pull requests.
 
-Use the [private vulnerability reporting form](https://github.com/CodeTelemetry/codetelemetry-iac/security/advisories/new)
+Use the [private vulnerability reporting form](https://github.com/CodeTelemetry/terraform-provider-codetelemetry/security/advisories/new)
 under **Security → Report a vulnerability**. Maintainers must enable and verify
 this channel when making the repository public. If the private form is unavailable,
 use an existing private maintainer contact rather than posting a public report.
@@ -33,8 +33,7 @@ credentials on its first refresh: verify the original workspace credentials befo
 upgrading or importing old state.
 
 Sensitive Terraform attributes are still present in plaintext in Terraform state
-and saved plan files. Pulumi encrypts values marked secret, but backend access and
-encryption keys still need protection. Logging with extra tool/debug tracing may
+and saved plan files; protect your backend. Logging with extra tool/debug tracing may
 expose data outside the provider's redacted diagnostics; never attach raw traces
 or state files to public reports.
 

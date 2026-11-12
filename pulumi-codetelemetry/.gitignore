@@ -1,5 +1,0 @@
-/bin/
-/sdks/
-/node_modules/
-/Pulumi.*.yaml
-*.tsbuildinfo
