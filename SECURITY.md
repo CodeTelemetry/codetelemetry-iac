@@ -2,8 +2,8 @@
 
 The provider is experimental. Security fixes are made on `main` and shipped in
 the next release; use the latest release. When building from source, use a
-supported, patched Go toolchain: the reviewed patch levels are 1.26.10 and
-1.27.3. Go 1.26 is the language-version floor, not a recommendation to use
+supported, patched Go toolchain: the reviewed patch levels are 1.26.11 and
+1.27.4. Go 1.26 is the language-version floor, not a recommendation to use
 unpatched Go 1.26.0 or Go 1.27.0.
 
 ## Reporting a vulnerability

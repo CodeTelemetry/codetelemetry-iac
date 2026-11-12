@@ -23,8 +23,8 @@ not equivalent to this validation command.
 
 ## Continuous integration
 
-Validation runs in each GitHub Actions matrix job: Go 1.26.10 / Node 22 and
-Go 1.27.3 / Node 24. Node runs the release-script tests. All pull requests, every
+Validation runs in each GitHub Actions matrix job: Go 1.26.11 / Node 22 and
+Go 1.27.4 / Node 24. Node runs the release-script tests. All pull requests, every
 push to `main`, manual dispatches, and merge-queue groups trigger validation
 without path filters. A push to `main` checks that pushed commit; pull requests
 check the merged result with the current base branch. The workflow verifies that
