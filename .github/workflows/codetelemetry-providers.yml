@@ -268,12 +268,12 @@ jobs:
       - name: Check dedicated workspace configuration before installing tools
         env:
           SMOKE_ENDPOINT: ${{ vars.SMOKE_ENDPOINT }}
-          SMOKE_EXPECTED_SUB: ${{ vars.SMOKE_EXPECTED_SUB }}
-          SMOKE_EXPECTED_ISSUER: ${{ vars.SMOKE_EXPECTED_ISSUER }}
+          SMOKE_EXPECTED_SUB: ${{ secrets.SMOKE_EXPECTED_SUB }}
+          SMOKE_EXPECTED_ISSUER: ${{ secrets.SMOKE_EXPECTED_ISSUER }}
           SMOKE_DEDICATED_WORKSPACE: ${{ vars.SMOKE_DEDICATED_WORKSPACE }}
-          SMOKE_USER_POOL_ID: ${{ vars.SMOKE_USER_POOL_ID }}
-          SMOKE_CLIENT_ID: ${{ vars.SMOKE_CLIENT_ID }}
-          SMOKE_USERNAME: ${{ vars.SMOKE_USERNAME }}
+          SMOKE_USER_POOL_ID: ${{ secrets.SMOKE_USER_POOL_ID }}
+          SMOKE_CLIENT_ID: ${{ secrets.SMOKE_CLIENT_ID }}
+          SMOKE_USERNAME: ${{ secrets.SMOKE_USERNAME }}
           SMOKE_PASSWORD: ${{ secrets.SMOKE_PASSWORD }}
         run: |
           node --input-type=module -e 'import {authenticationConfiguration} from "./scripts/auth/authenticate.mjs"; authenticationConfiguration(process.env);'
@@ -306,12 +306,12 @@ jobs:
       - name: Sign in and exercise both authenticated lifecycles and cleanup
         env:
           SMOKE_ENDPOINT: ${{ vars.SMOKE_ENDPOINT }}
-          SMOKE_EXPECTED_SUB: ${{ vars.SMOKE_EXPECTED_SUB }}
-          SMOKE_EXPECTED_ISSUER: ${{ vars.SMOKE_EXPECTED_ISSUER }}
+          SMOKE_EXPECTED_SUB: ${{ secrets.SMOKE_EXPECTED_SUB }}
+          SMOKE_EXPECTED_ISSUER: ${{ secrets.SMOKE_EXPECTED_ISSUER }}
           SMOKE_DEDICATED_WORKSPACE: ${{ vars.SMOKE_DEDICATED_WORKSPACE }}
-          SMOKE_USER_POOL_ID: ${{ vars.SMOKE_USER_POOL_ID }}
-          SMOKE_CLIENT_ID: ${{ vars.SMOKE_CLIENT_ID }}
-          SMOKE_USERNAME: ${{ vars.SMOKE_USERNAME }}
+          SMOKE_USER_POOL_ID: ${{ secrets.SMOKE_USER_POOL_ID }}
+          SMOKE_CLIENT_ID: ${{ secrets.SMOKE_CLIENT_ID }}
+          SMOKE_USERNAME: ${{ secrets.SMOKE_USERNAME }}
           SMOKE_PASSWORD: ${{ secrets.SMOKE_PASSWORD }}
         run: node scripts/run-authenticated-smoke.mjs dist "$RELEASE_VERSION"
       - name: Record successful verification

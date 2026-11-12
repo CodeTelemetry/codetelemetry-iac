@@ -53,20 +53,23 @@ source SHA and checksums again before using it. It uses the `release-verificatio
 environment, restricted to the `main` branch. Live jobs are serialized and running
 main workflows are not automatically canceled by new pushes.
 
-Configure these **environment variables**, using a dedicated non-production
-principal/workspace with no customer settings:
+Configure these values in the `release-verification` environment, using a
+dedicated non-production principal/workspace with no customer settings. Store
+the account and pool identifiers as environment **secrets**, not variables:
+Actions prints each step's variables in the public run log, and only secrets
+are masked. The endpoint and the dedicated-workspace flag stay variables.
 
-| Variable | Meaning |
-| --- | --- |
-| `SMOKE_ENDPOINT` | HTTPS service origin, without a path/query/fragment |
-| `SMOKE_EXPECTED_ISSUER` | Exact Cognito ID-token issuer |
-| `SMOKE_EXPECTED_SUB` | Exact subject of the isolated test principal |
-| `SMOKE_DEDICATED_WORKSPACE` | Literal `true`, confirming this is a disposable workspace |
-| `SMOKE_USER_POOL_ID` | Cognito pool matching the expected issuer |
-| `SMOKE_CLIENT_ID` | Existing dashboard SRP client ID accepted by the service |
-| `SMOKE_USERNAME` | Dedicated CI-only account username |
+| Name | Kind | Meaning |
+| --- | --- | --- |
+| `SMOKE_ENDPOINT` | variable | HTTPS service origin, without a path/query/fragment |
+| `SMOKE_EXPECTED_ISSUER` | secret | Exact Cognito ID-token issuer |
+| `SMOKE_EXPECTED_SUB` | secret | Exact subject of the isolated test principal |
+| `SMOKE_DEDICATED_WORKSPACE` | variable | Literal `true`, confirming this is a disposable workspace |
+| `SMOKE_USER_POOL_ID` | secret | Cognito pool matching the expected issuer |
+| `SMOKE_CLIENT_ID` | secret | Existing dashboard SRP client ID accepted by the service |
+| `SMOKE_USERNAME` | secret | Dedicated CI-only account username |
 
-Configure the environment **secret** `SMOKE_PASSWORD` through GitHub's secret UI
+Also configure the environment secret `SMOKE_PASSWORD`. Set secrets through GitHub's secret UI
 or an authorized operator process using private stdin. The account is dedicated
 to provider CI, has no privileged Cognito groups, customer-team memberships, or
 ingest keys, and starts with empty alarms and default enrichment. It is an
