@@ -1,5 +1,11 @@
 # Adversarial publication review — 2026-10-22
 
+> **Historical record.** This review predates the repository's rename back to
+> `terraform-provider-codetelemetry`, the move of the Pulumi integration to its
+> own repository, and the Terraform Registry release workflow. Names, paths and
+> blockers below describe the repository as reviewed on that date. See the
+> [release plan](PUBLIC_RELEASE_PLAN.md) for the current state.
+
 **Disposition: public package release is not cleared.** The code is an unpublished,
 experimental integration. MPL-2.0 has been selected; the final distribution identity and release
 validation are still required before a supported release. The fresh CodeTelemetry organization repository has been created;

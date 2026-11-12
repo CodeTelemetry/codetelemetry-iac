@@ -8,12 +8,11 @@
 *.tfstate.*
 *.tfplan
 .terraform/
-.pulumi/
-Pulumi.*.yaml
 crash.log
 
 # Release candidates and build scratch
 /dist/
+/bin/
 
 __pycache__/
 *.pyc

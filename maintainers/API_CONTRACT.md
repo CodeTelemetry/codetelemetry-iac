@@ -1,6 +1,6 @@
 # Service API contract used by the providers
 
-The Terraform and Pulumi integrations use an existing CodeTelemetry service.
+The Terraform provider and the Pulumi integration that bridges it use an existing CodeTelemetry service.
 They do not deploy it. Configure the service origin and a current Cognito ID token;
 all requests use `Authorization: Bearer <ID token>`. Ingest keys and Cognito access
 tokens are not accepted. The service verifies authentication and determines the
@@ -24,7 +24,7 @@ The provider requires explicit values for defaulted fields: `cooldownMinutes`,
 `severity`, `evaluateEveryMinutes`, `notifyOnRecovery`, and `origin`.
 TQL rules additionally use a `tql` object with `query`, `comparator`, `threshold`,
 and optional `column`/`minMatched`. `scope` can narrow the condition. See the
-[complete local example](../terraform-provider-codetelemetry/examples/rules.json).
+[complete local example](../examples/rules.json).
 The service owns query compilation, privacy gates, delivery validation, and
 per-field limits; malformed or unsupported rules are rejected before persistence.
 The provider additionally rejects inputs the API would silently trim or strip.

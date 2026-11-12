@@ -1,4 +1,4 @@
-name: Code Telemetry providers
+name: Code Telemetry provider
 
 on:
   pull_request:
@@ -28,8 +28,6 @@ jobs:
             node: '22'
           - go: '1.27.3'
             node: '24'
-    env:
-      PULUMI_SKIP_UPDATE_CHECK: 'true'
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
@@ -42,36 +40,21 @@ jobs:
       - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
         with:
           go-version: ${{ matrix.go }}
-          cache-dependency-path: terraform-provider-codetelemetry/go.sum
+          cache-dependency-path: go.sum
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: ${{ matrix.node }}
-          cache: npm
-          cache-dependency-path: pulumi-codetelemetry/package-lock.json
       - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3
         with:
           terraform_version: 1.13.5
           terraform_wrapper: false
-      - name: Install pinned Pulumi CLI
-        shell: bash
-        run: |
-          tool_dir="$RUNNER_TEMP/codetelemetry-pulumi"
-          mkdir -p "$tool_dir"
-          curl --fail --silent --show-error --location \
-            https://get.pulumi.com/releases/sdk/pulumi-v3.268.0-linux-x64.tar.gz \
-            --output "$tool_dir/pulumi.tar.gz"
-          echo '903cafeaa9f6327e4bf53a8b7b99ae660f26198acfa804a2f982bf5de3f1de0b  '"$tool_dir/pulumi.tar.gz" | sha256sum --check
-          tar -xzf "$tool_dir/pulumi.tar.gz" -C "$tool_dir"
-          echo "$tool_dir/pulumi" >> "$GITHUB_PATH"
       - name: Lint validation workflow and scripts
         run: |
           go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.11 .github/workflows/*.yml
           node --test scripts/test/*.test.mjs
-          shellcheck scripts/validate.sh terraform-provider-codetelemetry/scripts/validate.sh
+          shellcheck scripts/validate.sh
       - name: Validate Terraform provider
-        run: bash scripts/validate.sh --terraform
-      - name: Validate Pulumi integration
-        run: bash scripts/validate.sh --pulumi
+        run: bash scripts/validate.sh
 
   publication-security:
     name: Publication security
@@ -85,37 +68,29 @@ jobs:
       - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
         with:
           go-version: '1.27.3'
-          cache-dependency-path: terraform-provider-codetelemetry/go.sum
+          cache-dependency-path: go.sum
       - name: Scan complete fetched Git history for secrets
         run: go run github.com/zricethezav/gitleaks/v8@v8.30.1 git --redact --no-banner --log-opts=--all
       - name: Check reachable Go vulnerabilities
-        working-directory: terraform-provider-codetelemetry
         run: go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 -test ./...
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: '24'
-          cache: npm
-          cache-dependency-path: pulumi-codetelemetry/package-lock.json
       - name: Audit locked npm dependency graph
-        working-directory: pulumi-codetelemetry
-        run: |
-          npm audit --audit-level=low
-          npm audit --prefix ../scripts/auth --audit-level=low
+        run: npm audit --prefix scripts/auth --audit-level=low
 
   build-candidate:
     outputs:
       artifact_id: ${{ steps.upload.outputs.artifact-id }}
     name: Build candidate
     needs: [validation, publication-security]
-    if: github.repository == 'CodeTelemetry/codetelemetry-iac' && github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    if: github.repository == 'CodeTelemetry/terraform-provider-codetelemetry' && github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     permissions:
       contents: read
     env:
       RELEASE_VERSION: 0.0.0-dev.${{ github.run_number }}
-      PROVIDER_VERSION: 0.0.0-dev.${{ github.run_number }}
-      PULUMI_SKIP_UPDATE_CHECK: 'true'
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
@@ -123,32 +98,14 @@ jobs:
       - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
         with:
           go-version: '1.27.3'
-          cache-dependency-path: terraform-provider-codetelemetry/go.sum
+          cache-dependency-path: go.sum
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: '24'
-          cache: npm
-          cache-dependency-path: pulumi-codetelemetry/package-lock.json
       - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3
         with:
           terraform_version: 1.13.5
           terraform_wrapper: false
-      - name: Install pinned Pulumi CLI
-        shell: bash
-        run: |
-          tool_dir="$RUNNER_TEMP/codetelemetry-pulumi"
-          mkdir -p "$tool_dir"
-          curl --fail --silent --show-error --location \
-            https://get.pulumi.com/releases/sdk/pulumi-v3.268.0-linux-x64.tar.gz \
-            --output "$tool_dir/pulumi.tar.gz"
-          echo '903cafeaa9f6327e4bf53a8b7b99ae660f26198acfa804a2f982bf5de3f1de0b  '"$tool_dir/pulumi.tar.gz" | sha256sum --check
-          tar -xzf "$tool_dir/pulumi.tar.gz" -C "$tool_dir"
-          echo "$tool_dir/pulumi" >> "$GITHUB_PATH"
-      - name: Generate and compile SDK
-        working-directory: pulumi-codetelemetry
-        run: |
-          npm run setup
-          npm exec -- tsc --project sdks/codetelemetry/tsconfig.json
       - name: Build platform archives and checksum manifest
         run: python3 scripts/build-artifacts.py
       - id: upload
@@ -164,7 +121,7 @@ jobs:
       artifact_id: ${{ steps.upload.outputs.artifact-id }}
     name: Signed candidate
     needs: build-candidate
-    if: github.repository == 'CodeTelemetry/codetelemetry-iac' && github.ref == 'refs/heads/main'
+    if: github.repository == 'CodeTelemetry/terraform-provider-codetelemetry' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
@@ -204,12 +161,11 @@ jobs:
   consumer-install:
     name: Artifact consumer install
     needs: signed-candidate
-    if: github.repository == 'CodeTelemetry/codetelemetry-iac' && github.ref == 'refs/heads/main'
+    if: github.repository == 'CodeTelemetry/terraform-provider-codetelemetry' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     env:
       RELEASE_VERSION: 0.0.0-dev.${{ github.run_number }}
-      PULUMI_SKIP_UPDATE_CHECK: 'true'
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
@@ -221,17 +177,6 @@ jobs:
         with:
           terraform_version: 1.13.5
           terraform_wrapper: false
-      - name: Install pinned Pulumi CLI
-        shell: bash
-        run: |
-          tool_dir="$RUNNER_TEMP/codetelemetry-pulumi"
-          mkdir -p "$tool_dir"
-          curl --fail --silent --show-error --location \
-            https://get.pulumi.com/releases/sdk/pulumi-v3.268.0-linux-x64.tar.gz \
-            --output "$tool_dir/pulumi.tar.gz"
-          echo '903cafeaa9f6327e4bf53a8b7b99ae660f26198acfa804a2f982bf5de3f1de0b  '"$tool_dir/pulumi.tar.gz" | sha256sum --check
-          tar -xzf "$tool_dir/pulumi.tar.gz" -C "$tool_dir"
-          echo "$tool_dir/pulumi" >> "$GITHUB_PATH"
       - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
         with:
           artifact-ids: ${{ needs.signed-candidate.outputs.artifact_id }}
@@ -247,7 +192,7 @@ jobs:
   authenticated-smoke:
     name: Authenticated artifact smoke
     needs: [signed-candidate, consumer-install]
-    if: github.repository == 'CodeTelemetry/codetelemetry-iac' && github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    if: github.repository == 'CodeTelemetry/terraform-provider-codetelemetry' && github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     # Serialize writes to the singleton test workspace. Never cancel a live cleanup.
@@ -257,7 +202,6 @@ jobs:
     environment: release-verification
     env:
       RELEASE_VERSION: 0.0.0-dev.${{ github.run_number }}
-      PULUMI_SKIP_UPDATE_CHECK: 'true'
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
@@ -281,17 +225,6 @@ jobs:
         with:
           terraform_version: 1.13.5
           terraform_wrapper: false
-      - name: Install pinned Pulumi CLI
-        shell: bash
-        run: |
-          tool_dir="$RUNNER_TEMP/codetelemetry-pulumi"
-          mkdir -p "$tool_dir"
-          curl --fail --silent --show-error --location \
-            https://get.pulumi.com/releases/sdk/pulumi-v3.268.0-linux-x64.tar.gz \
-            --output "$tool_dir/pulumi.tar.gz"
-          echo '903cafeaa9f6327e4bf53a8b7b99ae660f26198acfa804a2f982bf5de3f1de0b  '"$tool_dir/pulumi.tar.gz" | sha256sum --check
-          tar -xzf "$tool_dir/pulumi.tar.gz" -C "$tool_dir"
-          echo "$tool_dir/pulumi" >> "$GITHUB_PATH"
       - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
         with:
           artifact-ids: ${{ needs.signed-candidate.outputs.artifact_id }}
@@ -303,7 +236,7 @@ jobs:
         run: node scripts/verify-artifacts.mjs dist "$GITHUB_SHA" "$RELEASE_VERSION"
       - name: Install locked SRP authentication client without credentials
         run: npm ci --prefix scripts/auth --ignore-scripts --no-audit --no-fund
-      - name: Sign in and exercise both authenticated lifecycles and cleanup
+      - name: Sign in and exercise the authenticated lifecycle and cleanup
         env:
           SMOKE_ENDPOINT: ${{ vars.SMOKE_ENDPOINT }}
           SMOKE_EXPECTED_SUB: ${{ secrets.SMOKE_EXPECTED_SUB }}
@@ -317,4 +250,4 @@ jobs:
       - name: Record successful verification
         run: |
           printf 'Verified artifact revision: %s\n' "$GITHUB_SHA" >> "$GITHUB_STEP_SUMMARY"
-          echo 'Both authenticated lifecycles and cleanup passed. No registry/npm release was published.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'The authenticated lifecycle and cleanup passed. Registry releases are published separately from version tags.' >> "$GITHUB_STEP_SUMMARY"

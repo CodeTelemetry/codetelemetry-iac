@@ -1,10 +1,9 @@
 # Contributing
 
-The shared source home is `CodeTelemetry/codetelemetry-iac`. It contains a
-Terraform provider for HCL configuration and a Pulumi TypeScript integration
-backed by the same Go implementation. Stable Registry/npm packages have not been
-published. Contributions are provided
-under the [Mozilla Public License 2.0](LICENSE). Third-party code must retain its
+This repository is the source of the CodeTelemetry Terraform provider. The
+Pulumi integration that bridges it lives in
+[CodeTelemetry/pulumi-codetelemetry](https://github.com/CodeTelemetry/pulumi-codetelemetry).
+Contributions are provided under the [Mozilla Public License 2.0](LICENSE). Third-party code must retain its
 required license notices.
 
 Read [AGENTS.md](AGENTS.md) and run the full repository validation:
@@ -13,10 +12,8 @@ Read [AGENTS.md](AGENTS.md) and run the full repository validation:
 bash scripts/validate.sh
 ```
 
-See [the validation guide](docs/VALIDATION.md) for prerequisites, individual suites,
-and their limits. Add a regression test for changes to lifecycle behavior, state
-compatibility, authentication handling, or bounded work. Run both integrations
-when changing the shared Go provider. Test with dummy tokens and local servers;
+See [the validation guide](maintainers/VALIDATION.md) for prerequisites and limits. Add a regression test for changes to lifecycle behavior, state
+compatibility, authentication handling, or bounded work. Test with dummy tokens and local servers;
 ordinary pull-request CI must not require live credentials or private source.
 
 Keep pull requests focused and describe the observable problem, resulting
