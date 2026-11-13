@@ -75,3 +75,23 @@ func TestClientHonorsCancellation(t *testing.T) {
 		t.Fatal("ignored deadline")
 	}
 }
+
+// A refused Grader save explains the usual cause in fixed text; the service's
+// own message never reaches the diagnostic.
+func TestClientRefusedGraderSave(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprint(w, `{"error":"invalid","message":"secret-body"}`)
+	}))
+	defer server.Close()
+	c, _ := newClient(server.URL, "secret-token")
+	for path, hinted := range map[string]bool{"/api/agent/grader/configure": true, graderAPI + "/draft": true, "/api/alert-rules": false} {
+		err := c.request(context.Background(), "POST", path, map[string]any{}, nil)
+		if err == nil || !strings.Contains(err.Error(), "HTTP 400") || strings.Contains(err.Error(), "beforePush") != hinted {
+			t.Fatalf("%s: unexpected diagnostic %v", path, err)
+		}
+		if strings.Contains(err.Error(), "secret") {
+			t.Fatalf("%s: diagnostic leaked response/token", path)
+		}
+	}
+}

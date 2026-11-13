@@ -86,6 +86,11 @@ func (c *client) request(ctx context.Context, method, path string, body, result 
 		if resp.StatusCode == http.StatusConflict {
 			return fmt.Errorf("Code Telemetry returned HTTP 409: configuration changed; refresh and plan again")
 		}
+		// The service's own message is deliberately withheld (see above), so a
+		// refused Grader save names the usual cause in fixed text instead.
+		if resp.StatusCode == http.StatusBadRequest && (strings.HasPrefix(path, "/api/agent/grader/configure") || strings.HasPrefix(path, graderAPI+"/draft")) {
+			return fmt.Errorf("Code Telemetry returned HTTP 400: the service refused a check. Matcher semantics are validated on save; a check with beforePush must name its commands (see the codetelemetry_grader_config documentation). Save one check at a time to find it")
+		}
 		return fmt.Errorf("Code Telemetry returned HTTP %d", resp.StatusCode)
 	}
 	raw, err := io.ReadAll(io.LimitReader(resp.Body, maxResponseBytes+1))
